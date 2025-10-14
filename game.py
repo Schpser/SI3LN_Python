@@ -31,17 +31,18 @@ class Game:
         def get_asset_path(relative_path):
             return os.path.join(BASE_DIR, relative_path)
 
-        # Fonts
-        self.font_large = pygame.font.SysFont('arial', 60)
-        self.font_medium = pygame.font.SysFont('arial', 30)
-        self.font_small = pygame.font.SysFont('arial', 20)
+        # 1. CORRECTION CRITIQUE DE LA POLICE pour compatibilité web
+        # Utiliser pygame.font.Font(None, taille) pour la police Pygame par défaut
+        self.font_large = pygame.font.Font(None, 60)
+        self.font_medium = pygame.font.Font(None, 30)
+        self.font_small = pygame.font.Font(None, 20)
         
         # Images
         try:
-            self.menu_bg = pygame.image.load(get_asset_path("assets/worlds/home_page.jpg")).convert() # .convert() pour l'optimisation
+            self.menu_bg = pygame.image.load(get_asset_path("assets/worlds/home_page.jpg")).convert()
             self.menu_bg = pygame.transform.scale(self.menu_bg, (self.screen_width, self.screen_height))
         except Exception as e:
-            print(f"Erreur chargement menu_bg: {e}")
+            # print(f"Erreur chargement menu_bg: {e}")
             self.menu_bg = pygame.Surface((self.screen_width, self.screen_height))
             self.menu_bg.fill((0, 0, 100))
         
@@ -49,7 +50,7 @@ class Game:
             self.game_bg = pygame.image.load(get_asset_path("assets/worlds/background_frozen.jpg")).convert()
             self.game_bg = pygame.transform.scale(self.game_bg, (self.screen_width, self.screen_height))
         except Exception as e:
-            print(f"Erreur chargement game_bg: {e}")
+            # print(f"Erreur chargement game_bg: {e}")
             self.game_bg = pygame.Surface((self.screen_width, self.screen_height))
             self.game_bg.fill((0, 50, 100))
         
@@ -62,13 +63,13 @@ class Game:
         
         for file in player_files:
             try:
-                img = pygame.image.load(get_asset_path(f"assets/players/{file}")).convert_alpha() # .convert_alpha() pour la transparence
+                img = pygame.image.load(get_asset_path(f"assets/players/{file}")).convert_alpha()
                 img = pygame.transform.scale(img, (100, 100))
                 self.players.append(img)
             except Exception as e:
-                # print(f"Could not load player: {file}. Error: {e}") # Décommenter pour debug
+                # print(f"Could not load player: {file}. Error: {e}") 
                 surf = pygame.Surface((100, 100))
-                surf.set_colorkey((0,0,0)) # Assure une couleur de fond transparente si possible
+                surf.set_colorkey((0,0,0))
                 color = (random.randint(50, 200), random.randint(50, 200), random.randint(50, 200))
                 surf.fill(color)
                 self.players.append(surf)
@@ -90,9 +91,10 @@ class Game:
             self.enemy_bullet_img = pygame.Surface((10, 20))
             self.enemy_bullet_img.fill((255, 0, 0))
         
-        # Enemies
+        # Enemies - Utilisation de noms de fichiers sans caractères spéciaux pour la stabilité web
         self.enemy_images = []
-        enemy_files = ["enemy (1).png", "enemy (2).png", "enemy (3).png", "enemy (4).png", "enemy (5).png"]
+        # ASSUMPTION: Tu as renommé tes fichiers de enemy (1).png à enemy_1.png
+        enemy_files = [f"enemy_{i}.png" for i in range(1, 6)]
         
         for file in enemy_files:
             try:
@@ -111,11 +113,17 @@ class Game:
         self.restart_btn = Button(self.screen_width//2, 500, 200, 60, "RESTART", self.font_medium)
         
         self.player_btns = []
-        positions = [(200, 200), (400, 200), (600, 200), (200, 350), (400, 350), (600, 350), (400, 500)]
+        # Correction pour décaler les boutons du centre vers la gauche (selon demande précédente)
+        positions = [
+            (100, 200), (300, 200), (500, 200), 
+            (100, 350), (300, 350), (500, 350), 
+            (300, 500) 
+        ]
+        
         for i, pos in enumerate(positions[:7]):
             self.player_btns.append(Button(pos[0], pos[1], 100, 100, f"P{i+1}", self.font_small))
         
-        self.start_game_btn = Button(self.screen_width//2, 600, 200, 60, "PLAY", self.font_medium)
+        self.start_game_btn = Button(300, 600, 200, 60, "PLAY", self.font_medium) # Décalé
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -182,7 +190,7 @@ class Game:
     def update(self):
         if self.state == "GAMEPLAY":
             keys = pygame.key.get_pressed()
-            if self.player: # Ajout d'une vérification au cas où le joueur serait mort
+            if self.player:
                 if keys[pygame.K_LEFT] and self.player.rect.left > 0:
                     self.player.rect.x -= 8
                 if keys[pygame.K_RIGHT] and self.player.rect.right < self.screen_width:
@@ -195,11 +203,12 @@ class Game:
             current_time = pygame.time.get_ticks()
             for enemy in self.enemies:
                 enemy.update(self.screen_width)
+                
                 # Ajout d'une limite pour éviter un tir massif à haut niveau
                 if current_time - enemy.last_shot > (2000 - self.level * 100) and random.random() < 0.02 * self.level:
                     bullet = Bullet(enemy.rect.centerx - 5, enemy.rect.bottom, self.enemy_bullet_img, False)
                     self.enemy_bullets.add(bullet)
-                    enemy.last_shot = current_time # Mise à jour de last_shot ici !
+                    enemy.last_shot = current_time
             
             # Collisions joueur / ennemis
             for bullet in self.player_bullets:
@@ -214,7 +223,6 @@ class Game:
                     bullet.kill()
                     self.lives -= 1
                     if self.lives <= 0:
-                        # Si le joueur perd toutes ses vies, on le retire du jeu.
                         self.player = None 
                         self.state = "GAME_OVER"
             
@@ -251,8 +259,10 @@ class Game:
             self.enemy_bullets.draw(self.screen)
             self.enemies.draw(self.screen)
             
+            # Correction pour mettre les vies à droite
             score_text = self.font_small.render(f"SCORE: {self.score}  LEVEL: {self.level}  LIVES: {self.lives}", True, (255, 255, 255))
-            self.screen.blit(score_text, (20, 20))
+            text_x = self.screen_width - score_text.get_width() - 20 
+            self.screen.blit(score_text, (text_x, 20))
         
         elif self.state == "LEVEL_WIN":
             self.screen.blit(self.menu_bg, (0, 0))
@@ -278,7 +288,7 @@ class Game:
                 self.update()
             self.draw()
             self.clock.tick(60)
-        pygame.quit() # Rétablit l'appel final à pygame.quit()
+        pygame.quit()
 
 class Button:
     def __init__(self, x, y, w, h, text, font):
@@ -306,9 +316,9 @@ class Enemy(pygame.sprite.Sprite):
         super().__init__()
         self.image = image
         self.rect = self.image.get_rect(topleft=(x, y))
-        self.speed = 1 # Vitesse de déplacement horizontal
+        self.speed = 1
         self.direction = 1
-        self.last_shot = pygame.time.get_ticks() # Initialise le temps du dernier tir
+        self.last_shot = pygame.time.get_ticks()
     
     def update(self, screen_width):
         self.rect.x += self.speed * self.direction
@@ -317,7 +327,6 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.y += 30
     
     def can_shoot(self):
-        # La logique de tir est gérée dans Game.update() pour faciliter la gestion du niveau
         return True 
 
 class Bullet(pygame.sprite.Sprite):
