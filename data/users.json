@@ -1,0 +1,16 @@
+{
+    "test_user": {
+        "password": "ecd71870d1963316a97e3ac3408c9835ad8cf0f3c1bc703527c30265534f75ae",
+        "email": "test@example.com",
+        "selected_character": 0,
+        "high_score": 0,
+        "levels_completed": {}
+    },
+    "SCHPS": {
+        "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+        "email": "schps.games@gmail.co",
+        "selected_character": 2,
+        "high_score": 300,
+        "levels_completed": {}
+    }
+}
