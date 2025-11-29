@@ -11,7 +11,7 @@ from auth import AuthSystem
 from scores import ScoreManager
 from profile import ProfileScreen
 from level_selector import LevelSelector
-from entities import Player, Enemy, Bullet, Explosion
+from entities import Player, Enemy, Bullet, Explosion, Bonus, SpecialAttack
 from ui_components import Button, InputField, ProfileIcon, Panel, PopUp
 
 
@@ -48,6 +48,22 @@ class Game:
         self.lives = MAX_LIVES
         self.selected_character = 0
         
+        # Nouveaux systèmes
+        self.bonuses = pygame.sprite.Group()
+        self.active_bonuses = {
+            "shield": {"active": False, "timer": 0, "duration": 3000},
+            "mega_shot": {"active": False, "timer": 0, "duration": 5000}
+        }
+        
+        self.special_attacks = pygame.sprite.Group()
+        self.player_debuffs = {
+            "frozen": False,
+            "blinded": False, 
+            "rooted": False,
+            "timer": 0,
+            "duration": 0
+        }
+        
         # Load assets
         self.load_assets()
         
@@ -71,6 +87,10 @@ class Game:
         
         # Fullscreen toggle
         self.is_fullscreen = False
+        
+        # Timers pour les attaques spéciales
+        self.last_special_attack_time = 0
+        self.special_attack_cooldown = 10000  # 10 secondes entre les attaques
     
     def load_assets(self):
         """Load all game assets"""
@@ -205,17 +225,14 @@ class Game:
         self.message_color = WHITE
         self.message_timer = 0
         
-        # ==========================================
-        # 📝 MODIFIER LES TEXTES DES POP-UPS ICI
-        # ==========================================
-        
-        # Contenu de la pop-up AIDE
-        # Vous pouvez modifier ces textes comme vous voulez
+        # Popups
         help_content = [
             "=== CONTROLES ===",
             "",
             "Deplacement: Fleches ou WASD",
             "Tirer: ESPACE",
+            "Bouclier: B",
+            "Mega Tir: MAJ",
             "Plein ecran: F11",
             "Retour menu: ESC",
             "",
@@ -223,8 +240,6 @@ class Game:
             "Evitez leurs tirs!"
         ]
         
-        # Contenu de la pop-up GAME (Présentation du jeu)
-        # Vous pouvez modifier ces textes comme vous voulez
         game_content = [
             "=== SI3LN ===",
             "Space Invaders III Last Night",
@@ -241,10 +256,6 @@ class Game:
             "Survivez aux vagues d'ennemis",
             "et battez les boss!"
         ]
-        
-        # ==========================================
-        # FIN DE LA SECTION TEXTES DES POP-UPS
-        # ==========================================
         
         self.popup_help = PopUp(400, 500, "AIDE", help_content, 
                                self.screen_width, self.screen_height, self.font_small, self.font_large)
@@ -310,7 +321,7 @@ class Game:
                         self.current_world = result[1]
                         self.current_level = result[2]
                         print(f"[DEBUG] Starting world={self.current_world}, level={self.current_level}")
-                        self.level_selector.close()  # Close level selector before starting
+                        self.level_selector.close()
                         self.start_level()
                     elif result[0] == "BACK":
                         self.level_selector.close()
@@ -337,7 +348,6 @@ class Game:
             pos = event.pos
             
             if self.btn_start.is_clicked(pos):
-                # Go to character selection and play as guest
                 self.auth.login_as_guest(self.selected_character)
                 self.update_profile_icon()
                 self.level_selector.open()
@@ -357,7 +367,7 @@ class Game:
             
             # Check popup clicks
             if self.popup_help.handle_click(pos) or self.popup_game.handle_click(pos):
-                pass  # Popup handled the click
+                pass
             
             # Profile icon
             if self.profile_icon and self.profile_icon.is_clicked(pos):
@@ -427,11 +437,9 @@ class Game:
                 success, msg = self.auth.register(username, password, email)
                 if success:
                     self.show_message(msg, GREEN)
-                    # Auto login
                     self.auth.login(username, password)
                     self.update_profile_icon()
                     self.state = STATE_MAIN_MENU
-                    # Clear fields
                     self.register_username.clear()
                     self.register_email.clear()
                     self.register_password.clear()
@@ -456,6 +464,13 @@ class Game:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 self.shoot_player_bullet()
+            
+            # Contrôles des bonus
+            if event.key == pygame.K_b and self.active_bonuses["shield"]["active"]:
+                self.activate_shield()
+            
+            if event.key == pygame.K_LSHIFT and self.active_bonuses["mega_shot"]["active"]:
+                self.mega_shot()
         
         if event.type == pygame.MOUSEBUTTONDOWN:
             pos = event.pos
@@ -488,7 +503,6 @@ class Game:
             
             if self.btn_next_level.is_clicked(pos):
                 self.current_level += 1
-                # Check if level exists in current world
                 max_levels = WORLDS[self.current_world]["levels"]
                 if self.current_level > max_levels:
                     self.show_message("Tous les niveaux terminés!", GREEN)
@@ -515,18 +529,16 @@ class Game:
         self.game_bg = self.world_backgrounds.get(self.current_world, self.world_backgrounds["Space"])
         print(f"[DEBUG] Background set for world: {self.current_world}")
         
-        # Create bullets with world-specific colors (animated)
+        # Create bullets with world-specific colors
         if self.current_world in WORLDS and "bullet_colors" in WORLDS[self.current_world]:
             colors = WORLDS[self.current_world]["bullet_colors"]
             
-            # Player bullet - animated with colors
             self.player_bullet_img = create_bullet_surface(
                 colors["player"][0], 
                 colors["player"][1], 
                 (15, 25)
             )
             
-            # Enemy bullet - animated with colors
             self.enemy_bullet_img = create_bullet_surface(
                 colors["enemy"][0], 
                 colors["enemy"][1], 
@@ -536,7 +548,6 @@ class Game:
             print(f"[DEBUG] Bullets created with colors for {self.current_world}")
         
         # Load explosion images specific to the world
-        # Map world names to explosion file names
         explosion_file_map = {
             "Space": ("sprites/player/pb_space.png", "sprites/ennemy/eb_space.png"),
             "Desert": ("sprites/player/pb_desert.png", "sprites/ennemy/eb_desert.png"),
@@ -564,6 +575,17 @@ class Game:
         self.player_bullets.empty()
         self.enemy_bullets.empty()
         self.explosions.empty()
+        self.bonuses.empty()
+        self.special_attacks.empty()
+        
+        # Reset debuffs
+        self.player_debuffs = {
+            "frozen": False,
+            "blinded": False, 
+            "rooted": False,
+            "timer": 0,
+            "duration": 0
+        }
         
         # Create player
         player_img = self.players[self.selected_character]
@@ -580,13 +602,11 @@ class Game:
     
     def spawn_enemies(self):
         """Spawn enemies for current level"""
-        # Calculate number of enemies based on level
         base_rows = 3
         base_cols = 5
         rows = min(base_rows + self.current_level // 2, 6)
         cols = min(base_cols + self.current_level // 2, 9)
         
-        # Calculate spacing
         enemy_width = 60
         enemy_height = 60
         spacing_x = 20
@@ -615,6 +635,101 @@ class Game:
                            self.screen_height)
             self.player_bullets.add(bullet)
     
+    def activate_shield(self):
+        """Active le bouclier du joueur"""
+        if self.active_bonuses["shield"]["active"]:
+            self.active_bonuses["shield"]["active"] = False
+            self.show_message("Bouclier activé!", BLUE)
+            # Ici tu peux ajouter un effet visuel de bouclier
+    
+    def mega_shot(self):
+        """Tir spécial plus puissant"""
+        if self.active_bonuses["mega_shot"]["active"]:
+            # Tir triple
+            for i in range(-1, 2):
+                bullet = Bullet(self.player.rect.centerx + i*20,
+                               self.player.rect.top,
+                               self.player_bullet_img,
+                               True,
+                               self.screen_height)
+                self.player_bullets.add(bullet)
+            self.active_bonuses["mega_shot"]["active"] = False
+            self.show_message("Mega tir activé!", YELLOW)
+    
+    def spawn_bonus(self, x, y):
+        """Fait tomber un bonus aléatoire"""
+        bonus_type = random.choice(["life", "shield", "mega_shot"])
+        bonus = Bonus(x, y, bonus_type)
+        self.bonuses.add(bonus)
+    
+    def activate_bonus(self, bonus_type):
+        """Active un bonus"""
+        if bonus_type == "life":
+            self.lives = min(self.lives + 1, 10)
+            self.show_message("+1 Vie!", GREEN)
+        else:
+            self.active_bonuses[bonus_type]["active"] = True
+            self.active_bonuses[bonus_type]["timer"] = pygame.time.get_ticks()
+            self.show_message(f"{bonus_type.title()} activé!", BLUE if bonus_type == "shield" else YELLOW)
+    
+    def trigger_world_special(self):
+        """Déclenche une attaque spéciale selon le monde"""
+        world = self.current_world
+        
+        if world == "Space":
+            self.spawn_space_lasers()
+        elif world == "Desert":
+            self.blind_player()
+        elif world == "Forest": 
+            self.root_player()
+        elif world == "Marine":
+            self.spawn_ice_ball()
+        elif world == "Apocalyptic":
+            self.spawn_energy_ball()
+    
+    def spawn_space_lasers(self):
+        """1-3 rayons laser tombent au hasard"""
+        num_lasers = random.randint(1, min(3, self.current_level))
+        for _ in range(num_lasers):
+            attack = SpecialAttack("laser", "Space", self.current_level, 
+                                 self.screen_width, self.screen_height)
+            self.special_attacks.add(attack)
+        self.show_message("Rayons laser!", PURPLE)
+    
+    def spawn_ice_ball(self):
+        """Balle de glace qui gèle les tirs"""
+        attack = SpecialAttack("ice", "Marine", self.current_level,
+                              self.screen_width, self.screen_height)
+        self.special_attacks.add(attack)
+        self.show_message("Balle de glace!", LIGHT_BLUE)
+    
+    def spawn_energy_ball(self):
+        """Boule d'énergie qui rebondit"""
+        attack = SpecialAttack("energy", "Apocalyptic", self.current_level,
+                              self.screen_width, self.screen_height)
+        self.special_attacks.add(attack)
+        self.show_message("Boule d'énergie!", YELLOW)
+    
+    def blind_player(self):
+        """Nuage de sable - joueur ne voit rien"""
+        attack = SpecialAttack("sand", "Desert", self.current_level,
+                              self.screen_width, self.screen_height)
+        self.special_attacks.add(attack)
+        self.player_debuffs["blinded"] = True
+        self.player_debuffs["timer"] = pygame.time.get_ticks()
+        self.player_debuffs["duration"] = min(1000 + (self.current_level * 200), 3000)
+        self.show_message("Nuage de sable!", SAND_COLOR)
+    
+    def root_player(self):
+        """Racines - joueur ne peut plus bouger"""
+        attack = SpecialAttack("roots", "Forest", self.current_level,
+                              self.screen_width, self.screen_height)
+        self.special_attacks.add(attack)
+        self.player_debuffs["rooted"] = True
+        self.player_debuffs["timer"] = pygame.time.get_ticks()
+        self.player_debuffs["duration"] = min(1500 + (self.current_level * 150), 3500)
+        self.show_message("Racines!", BROWN)
+    
     def update(self):
         """Update game logic"""
         # Update message timer
@@ -626,7 +741,6 @@ class Game:
         # Update profile screen
         if self.profile_screen.active:
             self.profile_screen.update()
-            # Update character selection
             new_char = self.profile_screen.get_selected_character()
             if new_char != self.selected_character:
                 self.selected_character = new_char
@@ -685,9 +799,10 @@ class Game:
         if not self.player:
             return
         
-        # Update player
+        # Update player (sauf si rooté)
         keys = pygame.key.get_pressed()
-        self.player.update(keys)
+        if not self.player_debuffs["rooted"]:
+            self.player.update(keys)
         
         # Update bullets
         self.player_bullets.update()
@@ -698,16 +813,39 @@ class Game:
             enemy.update()
             
             # Enemy shooting
-            if enemy.can_shoot():
+            current_time = pygame.time.get_ticks()
+            if enemy.can_shoot() and random.random() < enemy.shoot_chance:
                 bullet = Bullet(enemy.rect.centerx,
-                               enemy.rect.bottom,
-                               self.enemy_bullet_img,
-                               False,
-                               self.screen_height)
+                            enemy.rect.bottom,
+                            self.enemy_bullet_img,
+                            False,
+                            self.screen_height)
                 self.enemy_bullets.add(bullet)
+                enemy.last_shot = current_time
         
         # Update explosions
         self.explosions.update()
+        
+        # Update bonuses
+        self.bonuses.update()
+        
+        # Update special attacks
+        self.special_attacks.update()
+        
+        # Gestion des debuffs
+        self.update_debuffs()
+        
+        # Chance de spawner un bonus
+        if random.random() < 0.001:  # 0.1% de chance par frame
+            x = random.randint(50, self.screen_width - 50)
+            self.spawn_bonus(x, 0)
+        
+        # Chance de déclencher une attaque spéciale
+        current_time = pygame.time.get_ticks()
+        if (current_time - self.last_special_attack_time > self.special_attack_cooldown and 
+            random.random() < 0.01):  # 1% de chance quand le cooldown est écoulé
+            self.trigger_world_special()
+            self.last_special_attack_time = current_time
         
         # Collision detection
         self.check_collisions()
@@ -715,12 +853,23 @@ class Game:
         # Check win condition
         if len(self.enemies) == 0:
             self.state = STATE_LEVEL_WIN
-            # Save score
             if self.auth.current_user:
                 self.auth.update_user_data(
                     high_score=max(self.current_score, 
                                   self.auth.get_user_data("high_score") or 0)
                 )
+    
+    def update_debuffs(self):
+        """Gère la durée des debuffs"""
+        current_time = pygame.time.get_ticks()
+        
+        if self.player_debuffs["blinded"]:
+            if current_time - self.player_debuffs["timer"] > self.player_debuffs["duration"]:
+                self.player_debuffs["blinded"] = False
+        
+        if self.player_debuffs["rooted"]:
+            if current_time - self.player_debuffs["timer"] > self.player_debuffs["duration"]:
+                self.player_debuffs["rooted"] = False
     
     def check_collisions(self):
         """Check all collisions"""
@@ -730,11 +879,13 @@ class Game:
             if hits:
                 bullet.kill()
                 self.current_score += 10 * self.current_level
-                # Create explosion (enemy destroyed)
                 for enemy in hits:
                     explosion = Explosion(enemy.rect.centerx, enemy.rect.centery, 
                                         explosion_img=self.enemy_explosion_img)
                     self.explosions.add(explosion)
+                    # Chance de faire tomber un bonus
+                    if random.random() < 0.2:  # 20% de chance
+                        self.spawn_bonus(enemy.rect.centerx, enemy.rect.centery)
         
         # Enemy bullets hit player
         if self.player:
@@ -742,14 +893,12 @@ class Game:
             if hits:
                 self.lives -= len(hits)
                 if self.lives <= 0:
-                    # Game over
                     explosion = Explosion(self.player.rect.centerx, 
                                         self.player.rect.centery, RED,
                                         explosion_img=self.player_explosion_img)
                     self.explosions.add(explosion)
                     self.player = None
                     
-                    # Save score
                     username = self.auth.current_user or "Guest"
                     if username != "Guest":
                         position, is_top_20 = self.score_manager.add_score(
@@ -758,14 +907,31 @@ class Game:
                     
                     self.state = STATE_GAME_OVER
         
-        # Enemies reach player (collide with player)
+        # Enemies reach player
         if self.player:
             hits = pygame.sprite.spritecollide(self.player, self.enemies, True)
             if hits:
-                self.lives -= len(hits) * 2  # Lose more lives for direct hits
+                self.lives -= len(hits) * 2
                 if self.lives <= 0:
                     self.player = None
                     self.state = STATE_GAME_OVER
+        
+        # Player collects bonuses
+        if self.player:
+            collected_bonuses = pygame.sprite.spritecollide(self.player, self.bonuses, True)
+            for bonus in collected_bonuses:
+                self.activate_bonus(bonus.bonus_type)
+        
+        # Special attacks hit player
+        if self.player:
+            for attack in self.special_attacks:
+                if pygame.sprite.collide_rect(self.player, attack):
+                    if attack.world == "Space":
+                        self.lives -= attack.damage
+                        attack.kill()
+                        if self.lives <= 0:
+                            self.player = None
+                            self.state = STATE_GAME_OVER
     
     def draw(self):
         """Draw everything"""
@@ -785,13 +951,13 @@ class Game:
         elif self.state == STATE_LEVEL_WIN:
             self.draw_level_win()
         
-        # Draw profile icon (on most screens)
+        # Draw profile icon
         if (not self.level_selector.active and 
             self.state not in [STATE_LOGIN, STATE_REGISTER]):
             if self.profile_icon:
                 self.profile_icon.draw(self.screen)
         
-        # Draw profile screen (overlay)
+        # Draw profile screen
         if self.profile_screen.active:
             self.profile_screen.draw()
         
@@ -799,7 +965,6 @@ class Game:
         if self.message:
             msg_surf = self.font_small.render(self.message, True, self.message_color)
             msg_rect = msg_surf.get_rect(center=(self.screen_width // 2, 50))
-            # Draw background for readability
             bg_rect = msg_rect.inflate(20, 10)
             pygame.draw.rect(self.screen, (0, 0, 0, 200), bg_rect, border_radius=5)
             self.screen.blit(msg_surf, msg_rect)
@@ -810,11 +975,9 @@ class Game:
         """Draw main menu"""
         self.screen.blit(self.menu_bg, (0, 0))
         
-        # Title
         title = self.font_large.render("S I 3 L N", True, WHITE)
         title_rect = title.get_rect(center=(self.screen_width // 2, 150))
         
-        # Title shadow
         shadow = self.font_large.render("S I 3 L N", True, BLACK)
         shadow_rect = title_rect.copy()
         shadow_rect.x += 3
@@ -822,19 +985,16 @@ class Game:
         self.screen.blit(shadow, shadow_rect)
         self.screen.blit(title, title_rect)
         
-        # Subtitle
         subtitle = self.font_small.render("Space Invaders III - Last Night", True, CYAN)
         subtitle_rect = subtitle.get_rect(center=(self.screen_width // 2, 220))
         self.screen.blit(subtitle, subtitle_rect)
         
-        # Buttons
         self.btn_start.draw(self.screen)
         self.btn_continue.draw(self.screen)
         self.btn_help.draw(self.screen)
         self.btn_game.draw(self.screen)
         self.btn_quit.draw(self.screen)
         
-        # Draw popups on top
         self.popup_help.draw(self.screen)
         self.popup_game.draw(self.screen)
     
@@ -842,21 +1002,17 @@ class Game:
         """Draw login screen"""
         self.screen.blit(self.menu_bg, (0, 0))
         
-        # Semi-transparent overlay
         overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 150))
         self.screen.blit(overlay, (0, 0))
         
-        # Title
         title = self.font_large.render("CONNEXION", True, WHITE)
         title_rect = title.get_rect(center=(self.screen_width // 2, 150))
         self.screen.blit(title, title_rect)
         
-        # Input fields
         self.login_username.draw(self.screen)
         self.login_password.draw(self.screen)
         
-        # Buttons
         self.btn_login.draw(self.screen)
         self.btn_to_register.draw(self.screen)
         self.btn_guest.draw(self.screen)
@@ -865,23 +1021,19 @@ class Game:
         """Draw register screen"""
         self.screen.blit(self.menu_bg, (0, 0))
         
-        # Semi-transparent overlay
         overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 150))
         self.screen.blit(overlay, (0, 0))
         
-        # Title
         title = self.font_large.render("INSCRIPTION", True, WHITE)
         title_rect = title.get_rect(center=(self.screen_width // 2, 120))
         self.screen.blit(title, title_rect)
         
-        # Input fields
         self.register_username.draw(self.screen)
         self.register_email.draw(self.screen)
         self.register_password.draw(self.screen)
         self.register_confirm.draw(self.screen)
         
-        # Buttons
         self.btn_register.draw(self.screen)
         self.btn_back_login.draw(self.screen)
     
@@ -897,46 +1049,58 @@ class Game:
         self.player_bullets.draw(self.screen)
         self.enemy_bullets.draw(self.screen)
         self.explosions.draw(self.screen)
+        self.bonuses.draw(self.screen)
+        self.special_attacks.draw(self.screen)
+        
+        # Draw debuff effects
+        if self.player_debuffs["blinded"]:
+            overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+            overlay.fill((210, 180, 140, 150))
+            self.screen.blit(overlay, (0, 0))
         
         # Draw HUD
         self.draw_hud()
     
     def draw_hud(self):
         """Draw heads-up display"""
-        # Background panel
         hud_panel = pygame.Surface((self.screen_width, 50), pygame.SRCALPHA)
         hud_panel.fill((0, 0, 0, 180))
         self.screen.blit(hud_panel, (0, 0))
         
-        # Score
         score_text = self.font_small.render(f"Score: {self.current_score}", True, WHITE)
         self.screen.blit(score_text, (20, 15))
         
-        # Level
         level_text = self.font_small.render(f"Niveau: {self.current_level}", True, CYAN)
         level_rect = level_text.get_rect(center=(self.screen_width // 2, 25))
         self.screen.blit(level_text, level_rect)
         
-        # Lives
         lives_text = self.font_small.render(f"Vies: {self.lives}", True, RED)
         lives_rect = lives_text.get_rect(right=self.screen_width - 120, centery=25)
         self.screen.blit(lives_text, lives_rect)
+        
+        # Afficher les bonus actifs
+        bonus_x = self.screen_width - 250
+        if self.active_bonuses["shield"]["active"]:
+            shield_text = self.font_tiny.render("BOUCLIER", True, BLUE)
+            self.screen.blit(shield_text, (bonus_x, 15))
+            bonus_x += 80
+        
+        if self.active_bonuses["mega_shot"]["active"]:
+            mega_text = self.font_tiny.render("MEGA TIR", True, YELLOW)
+            self.screen.blit(mega_text, (bonus_x, 15))
     
     def draw_game_over(self):
         """Draw game over screen"""
         self.screen.blit(self.menu_bg, (0, 0))
         
-        # Semi-transparent overlay
         overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 180))
         self.screen.blit(overlay, (0, 0))
         
-        # Title
         title = self.font_large.render("GAME OVER", True, RED)
         title_rect = title.get_rect(center=(self.screen_width // 2, 120))
         self.screen.blit(title, title_rect)
         
-        # Final score
         score_text = self.font_medium.render(f"Score Final: {self.current_score}", True, WHITE)
         score_rect = score_text.get_rect(center=(self.screen_width // 2, 200))
         self.screen.blit(score_text, score_rect)
@@ -945,10 +1109,8 @@ class Game:
         level_rect = level_text.get_rect(center=(self.screen_width // 2, 250))
         self.screen.blit(level_text, level_rect)
         
-        # High scores
         self.draw_high_scores(300)
         
-        # Buttons
         self.btn_restart.draw(self.screen)
         self.btn_finish.draw(self.screen)
     
@@ -976,22 +1138,18 @@ class Game:
         """Draw level win screen"""
         self.screen.blit(self.menu_bg, (0, 0))
         
-        # Semi-transparent overlay
         overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 150))
         self.screen.blit(overlay, (0, 0))
         
-        # Title
         title = self.font_large.render(f"NIVEAU {self.current_level} TERMINÉ!", True, GREEN)
         title_rect = title.get_rect(center=(self.screen_width // 2, 200))
         self.screen.blit(title, title_rect)
         
-        # Score
         score_text = self.font_medium.render(f"Score: {self.current_score}", True, WHITE)
         score_rect = score_text.get_rect(center=(self.screen_width // 2, 280))
         self.screen.blit(score_text, score_rect)
         
-        # Buttons
         self.btn_next_level.draw(self.screen)
         self.btn_level_select.draw(self.screen)
     
@@ -1009,11 +1167,9 @@ class Game:
                 pygame.RESIZABLE
             )
         
-        # Update screen dimensions
         self.screen_width = self.screen.get_width()
         self.screen_height = self.screen.get_height()
         
-        # Recreate UI and reload assets
         self.load_assets()
         self.create_ui()
         self.profile_screen = ProfileScreen(self.screen, self.auth, self.players)
@@ -1026,7 +1182,6 @@ class Game:
         self.screen_height = height
         self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
         
-        # Recreate UI
         self.load_assets()
         self.create_ui()
         self.profile_screen = ProfileScreen(self.screen, self.auth, self.players)
@@ -1043,3 +1198,8 @@ class Game:
         
         pygame.quit()
         sys.exit()
+
+
+if __name__ == "__main__":
+    game = Game()
+    game.run()

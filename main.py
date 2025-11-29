@@ -1,6 +1,7 @@
 import pygame
 import os
 import sys
+import asyncio
 
 os.environ['SDL_AUDIODRIVER'] = 'dummy'
 
@@ -11,11 +12,11 @@ except ImportError:
     sys.exit(1)
 
 
-def main():
+async def main():
     pygame.init() 
 
     game = Game()
-    game.run()
+    await game.run()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

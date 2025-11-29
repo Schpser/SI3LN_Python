@@ -10,7 +10,21 @@
         "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
         "email": "schps.games@gmail.co",
         "selected_character": 2,
-        "high_score": 300,
+        "high_score": 1610,
+        "levels_completed": {}
+    },
+    "lololololololololo": {
+        "password": "6d35fdcf71dbd8372e439c0c26ad991f5241934975e37815580aae76bb6d23da",
+        "email": "",
+        "selected_character": 0,
+        "high_score": 6290,
+        "levels_completed": {}
+    },
+    "schps": {
+        "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+        "email": "",
+        "selected_character": 2,
+        "high_score": 3910,
         "levels_completed": {}
     }
 }

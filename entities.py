@@ -70,8 +70,8 @@ class Enemy(pygame.sprite.Sprite):
         
         # Shooting
         self.last_shot = pygame.time.get_ticks()
-        self.shoot_cooldown = max(1000, 2500 - level * 150)  # Faster shooting at higher levels
-        self.shoot_chance = min(0.03 * level, 0.15)  # Max 15% chance per frame
+        self.shoot_cooldown = max(700, 3000 - level * 100)  # Faster shooting at higher levels
+        self.shoot_chance = min(0.1 * level, 0.5)  # Max 15% chance per frame
         
         # Boundaries (enemy play area)
         self.min_x = 20
@@ -191,3 +191,109 @@ class PowerUp(pygame.sprite.Sprite):
         self.rect.y += self.speed
         if self.rect.top > 800:  # Off screen
             self.kill()
+
+class Bonus(pygame.sprite.Sprite):
+    def __init__(self, x, y, bonus_type):
+        super().__init__()
+        self.bonus_type = bonus_type  # "life", "shield", "mega_shot"
+        self.colors = {
+            "life": RED, 
+            "shield": BLUE, 
+            "mega_shot": YELLOW
+        }
+        self.symbols = {
+            "life": "♥",
+            "shield": "⛊", 
+            "mega_shot": "⚡"
+        }
+
+        self.image = pygame.Surface((30, 30), pygame.SRCALPHA)
+        pygame.draw.circle(self.image, self.colors[bonus_type], (15, 15), 15)
+        pygame.draw.circle(self.image, WHITE, (15, 15), 12, 2)
+
+        font = pygame.font.Font(None, 20)
+        symbol = font.render(self.symbols[bonus_type], True, WHITE)
+        symbol_rect = symbol.get_rect(center=(15, 15))
+        self.image.blit(symbol, symbol_rect)
+        
+        self.rect = self.image.get_rect(center=(x, y))
+        self.speed = 3
+        
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.top > pygame.display.get_surface().get_height():
+            self.kill()
+
+class SpecialAttack(pygame.sprite.Sprite):
+    def __init__(self, attack_type, world, level, screen_width, screen_height):
+        super().__init__()
+        self.attack_type = attack_type
+        self.world = world
+        self.level = level
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.duration = min(2000 + (level * 200), 4000)  # 4s
+        
+        if world == "Space":
+            # Laser
+            self.image = pygame.Surface((10, screen_height))
+            self.image.fill(PURPLE)
+            self.rect = self.image.get_rect(center=(random.randint(50, screen_width-50), 0))
+            self.speed = 5
+            
+        elif world == "Desert":
+            # Sand
+            self.image = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+            self.image.fill((210, 180, 140, 180))
+            self.rect = self.image.get_rect(topleft=(0, 0))
+            
+        elif world == "Forest":
+            # Roots
+            self.image = pygame.Surface((80, 80), pygame.SRCALPHA)
+            pygame.draw.circle(self.image, (139, 69, 19), (40, 40), 40)
+            pygame.draw.circle(self.image, (101, 67, 33), (40, 40), 30)
+            self.rect = self.image.get_rect(center=(screen_width//2, screen_height-50))
+            
+        elif world == "Marine":
+            # Ice ball
+            self.image = pygame.Surface((40, 40), pygame.SRCALPHA)
+            pygame.draw.circle(self.image, (173, 216, 230), (20, 20), 20)
+            pygame.draw.circle(self.image, (135, 206, 235), (20, 20), 15)
+            self.rect = self.image.get_rect(center=(random.randint(50, screen_width-50), 0))
+            self.speed = 3
+            
+        elif world == "Apocalyptic":
+            # Enery Ball
+            self.image = pygame.Surface((50, 50), pygame.SRCALPHA)
+            pygame.draw.circle(self.image, (255, 255, 0), (25, 25), 25)
+            pygame.draw.circle(self.image, (255, 165, 0), (25, 25), 15)
+            self.rect = self.image.get_rect(center=(random.randint(50, screen_width-50), 0))
+            self.speed_x = random.choice([-3, 3])
+            self.speed_y = 4
+            self.bounces = 0
+            self.max_bounces = 3
+    
+    def update(self):
+        if self.world == "Space":
+            self.rect.y += self.speed
+            if self.rect.top > self.screen_height:
+                self.kill()
+                
+        elif self.world == "Marine":
+            self.rect.y += self.speed
+            if self.rect.top > self.screen_height:
+                self.kill()
+                
+        elif self.world == "Apocalyptic":
+            self.rect.x += self.speed_x
+            self.rect.y += self.speed_y
+
+            if self.rect.left <= 0 or self.rect.right >= self.screen_width:
+                self.speed_x = -self.speed_x
+                self.bounces += 1
+            if self.rect.top <= 0:
+                self.speed_y = -self.speed_y
+                self.bounces += 1
+                
+            if self.bounces >= self.max_bounces or self.rect.top > self.screen_height:
+                self.kill()
