@@ -355,3 +355,9 @@ class LevelSelector:
             "level": self.selected_level,
             "world_data": self.worlds[self.selected_world]
         }
+    
+        # Create animated player preview (inside the selected character button)
+        btn = self.character_buttons[self.selected_character]
+        preview_x = btn.rect.centerx - 40
+        preview_y = btn.rect.centery - 40
+        self.animated_player = AnimatedPlayer(preview_x, preview_y, 80, 80, self.selected_character)

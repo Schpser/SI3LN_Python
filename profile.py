@@ -4,7 +4,7 @@ Allows user to modify character, username, and password
 """
 import pygame
 from constants import *
-from ui_components import Button, InputField, Panel, ImageButton
+from ui_components import Button, InputField, Panel, ImageButton, AnimatedPlayer
 
 
 class ProfileScreen:
@@ -19,6 +19,9 @@ class ProfileScreen:
         self.screen_height = screen.get_height()
         
         self.setup_ui()
+        
+        # Animated player preview
+        self.animated_player = None
     
     def setup_ui(self):
         """Setup UI components"""
@@ -90,7 +93,7 @@ class ProfileScreen:
         if not self.auth.guest_mode and self.auth.current_user:
             user_data = self.auth.get_user_data()
             self.selected_character = user_data.get("selected_character", 0)
-            self.username_input.text = ""  # Don't pre-fill to avoid accidental changes
+            self.username_input.text = ""
         elif self.auth.guest_mode:
             self.selected_character = self.auth.guest_character
         
@@ -98,12 +101,17 @@ class ProfileScreen:
         for i, btn in enumerate(self.character_buttons):
             btn.selected = (i == self.selected_character)
         
+        # Create animated player preview (inside the selected character button)
+        btn = self.character_buttons[self.selected_character]
+        preview_x = btn.rect.centerx - 40
+        preview_y = btn.rect.centery - 40
+        self.animated_player = AnimatedPlayer(preview_x, preview_y, 80, 80, self.selected_character)
+        
         # Clear inputs
         self.old_password_input.clear()
         self.new_password_input.clear()
         self.confirm_password_input.clear()
         self.message = ""
-    
     def close(self):
         """Close profile screen"""
         self.active = False
@@ -128,6 +136,15 @@ class ProfileScreen:
                     self.selected_character = i
                     for j, b in enumerate(self.character_buttons):
                         b.selected = (j == i)
+                    # Create new animated player (inside the selected character button)
+                    btn = self.character_buttons[i]
+                    preview_x = btn.rect.centerx - 40
+                    preview_y = btn.rect.centery - 40
+                    self.animated_player = AnimatedPlayer(preview_x, preview_y, 80, 80, self.selected_character)
+                    try:
+                        btn.start_animation()
+                    except Exception:
+                        pass
             
             # Save button
             if self.save_button.is_clicked(pos):
@@ -220,6 +237,10 @@ class ProfileScreen:
         
         mouse_pos = pygame.mouse.get_pos()
         
+        # Update animated player
+        if self.animated_player:
+            self.animated_player.update(1/60)
+        
         # Update buttons
         for btn in self.character_buttons:
             btn.update(mouse_pos)
@@ -270,6 +291,10 @@ class ProfileScreen:
         for btn in self.character_buttons:
             btn.draw(self.screen)
         
+        # Draw animated player preview
+        if self.animated_player:
+            self.animated_player.draw(self.screen)
+        
         # Draw input fields (only if not guest)
         if not self.auth.guest_mode:
             self.username_input.draw(self.screen)
@@ -298,3 +323,14 @@ class ProfileScreen:
     def get_selected_character(self):
         """Get currently selected character"""
         return self.selected_character
+    
+    def update_gameplay(self):
+        """Update gameplay logic"""
+        print(f"[DEBUG UPDATE_GAMEPLAY] Enemies: {len(self.enemies)}, State: {self.state}")  # Ajoute cette ligne tout au début
+        
+        if not self.player:
+            return
+        
+        print(f"[DEBUG] Enemies count: {len(self.enemies)}")  # Ajoute cette ligne
+        
+        # ... rest of the code

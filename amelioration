@@ -1,0 +1,53 @@
+AMÉLIORATIONS À FAIRE 🎮
+1. ARCHITECTURE & ORGANISATION
+❌ Trop de responsabilités dans game.py → Diviser en modules (GameState, CollisionManager, EntityManager)
+❌ Magic numbers partout → Utiliser plus de constantes
+❌ Pas de gestion d'erreurs globale → Ajouter try/except et logging
+❌ Duplication de code → Consolider les patterns répétés
+2. GAMEPLAY & MÉCANIQUE
+❌ Collision au joueur trop primitive → Améliorer la détection (cercles, polygones)
+❌ Pas de progression réelle → Les ennemis ne deviennent pas plus forts/nombreux vraiment
+❌ Pas de système de vagues → Les ennemis arrivent tous à la fois
+❌ Pas de difficultés → Ajouter Easy/Normal/Hard
+❌ Les bonus sont trop rares → Revoir les probabilités
+❌ Pas de feedback visuel pour les dégâts → Ajouter des flash/son
+3. ENTITÉS & SPRITES
+❌ Pas d'animation des ennemis → Ajouter des sprites animés
+❌ Pas de rotation/inclinaison du joueur → Améliorer l'esthétique
+❌ Pas de boss/ennemis spéciaux → Ajouter variété
+❌ Les explosions sont basiques → Ajouter des particules
+4. SYSTÈME DE SCORE & PROGRESSION
+❌ Pas de système de combo → Ajouter multiplicateur de score
+❌ Pas de récompenses → Ajouter achievements/trophées
+❌ Pas de progression entre niveaux → Rendre les niveaux progressifs
+❌ Top 20 ne se met à jour qu'en jeu → Permettre rejeu des niveaux
+5. INTERFACE & UX
+❌ Pas de menu pause pendant le jeu → Ajouter P pour pause
+❌ Pas de tutoriel → Ajouter première mission tuto
+❌ Pas d'indication des contrôles en jeu → Afficher hints
+❌ Pas de customisation des touches → Ajouter rebinding
+❌ Les menus sont linéaires → Améliorer la navigation
+6. AUDIO & AMBIANCE
+❌ Pas de musique → Ajouter background music
+❌ Pas de sound effects → Ajouter SFX pour tirs/collisions/victoire
+❌ Pas de volume control → Ajouter slider volume
+7. SÉCURITÉ & DONNÉES
+❌ Mots de passe en SHA256 seulement → Utiliser bcrypt
+❌ Pas de validation côté serveur → Ajouter plus de checks
+❌ Pas de protection du fichier JSON → Ajouter chiffrement basique
+❌ Données sensibles en local → Pas de backup/cloud
+8. PERFORMANCE
+❌ Pas de pooling d'objets → Les balles créent trop d'allocations
+❌ Pas de culling spatial → Tous les sprites sont updatés
+❌ Images rechargées à chaque jeu → Implémenter cache
+❌ create_circular_surface est très lente → Optimiser avec numpy
+9. CONTENU & VARIÉ
+❌ Pas de power-ups intéressants → Ajouter slow-mo, double fire, etc
+❌ Pas de items collectibles → Ajouter armes spéciales
+❌ Les mondes sont visuellement similaires → Plus de différences
+❌ Pas de story/narration → Ajouter contexte narratif
+10. BUGS & ROBUSTESSE
+⚠️ Enemies reach player: hardcoded y > 150 → Peut être en dehors de l'écran
+⚠️ Pas de gestion du redimensionnement dynamique → Ui se casse
+⚠️ Pas de validation des assets → Crash si fichier manquant
+⚠️ Memory leak potentiel → Les sprites ne sont pas toujours killés
