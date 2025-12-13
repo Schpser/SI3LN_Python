@@ -5,6 +5,7 @@ Includes buttons, input fields, and other UI elements
 import pygame
 from constants import *
 import os
+from utils.animation_cache import load_cached_frames, save_cached_frames
 
 # Cache global pour les frames d'animation des personnages
 # Structure: {(player_index, width, height): [frames]}
@@ -373,13 +374,13 @@ class AnimatedPlayer:
         self.rect = pygame.Rect(x, y, width, height)
     
     def load_frames(self):
-        """Load all animation frames for the player (utilise le cache global)"""
+        """Load all animation frames for the player (utilise le cache global et persistant)"""
         global _animation_cache
         
         # Clé du cache: (player_index, width, height)
         cache_key = (self.player_index, self.width, self.height)
         
-        # Vérifier si les frames sont déjà en cache
+        # Vérifier si les frames sont déjà en cache mémoire
         if cache_key in _animation_cache:
             self.frames = _animation_cache[cache_key]
             return
@@ -392,6 +393,15 @@ class AnimatedPlayer:
             print(f"⚠️ Dossier introuvable : {player_path}")
             return
         
+        # Essayer de charger depuis le cache persistant
+        cached_frames = load_cached_frames(self.player_index, self.width, self.height, player_path)
+        if cached_frames:
+            self.frames = cached_frames
+            _animation_cache[cache_key] = cached_frames
+            print(f"✓ {len(self.frames)} frames chargées depuis le cache pour player_{self.player_index + 1}")
+            return
+        
+        # Cache invalide ou absent, charger depuis les fichiers sources
         # Load all frame files (supports both formats)
         frame_files = sorted([
             f for f in os.listdir(player_path) 
@@ -424,9 +434,11 @@ class AnimatedPlayer:
             except pygame.error as e:
                 print(f"⚠️ Impossible de charger {frame_path}: {e}")
         
-        # Mettre en cache pour réutilisation future
+        # Mettre en cache (mémoire et disque)
         if self.frames:
             _animation_cache[cache_key] = self.frames
+            # Sauvegarder dans le cache persistant
+            save_cached_frames(self.player_index, self.width, self.height, self.frames, player_path)
             elapsed = pygame.time.get_ticks() - start_time
             print(f"✓ {len(self.frames)} frames chargées pour player_{self.player_index + 1} en {elapsed}ms (mis en cache)")
         else:
@@ -489,17 +501,19 @@ class AnimatedPlayer:
 
 
 def preload_character_animations(width, height, max_players=9):
-    """Précharge les animations de tous les personnages disponibles dans le cache"""
+    """Précharge les animations de tous les personnages disponibles dans le cache (mémoire et disque)"""
     global _animation_cache
     
     print("🔄 Préchargement des animations des personnages...")
     start_time = pygame.time.get_ticks()
     loaded_count = 0
+    from_cache_count = 0
+    from_disk_count = 0
     
     for player_index in range(max_players):
         cache_key = (player_index, width, height)
         
-        # Vérifier si déjà en cache
+        # Vérifier si déjà en cache mémoire
         if cache_key in _animation_cache:
             continue
         
@@ -508,6 +522,15 @@ def preload_character_animations(width, height, max_players=9):
         if not os.path.exists(player_path):
             continue
         
+        # Essayer de charger depuis le cache persistant
+        cached_frames = load_cached_frames(player_index, width, height, player_path)
+        if cached_frames:
+            _animation_cache[cache_key] = cached_frames
+            loaded_count += 1
+            from_cache_count += 1
+            continue
+        
+        # Cache invalide ou absent, charger depuis les fichiers sources
         # Load all frame files
         frame_files = sorted([
             f for f in os.listdir(player_path) 
@@ -544,10 +567,16 @@ def preload_character_animations(width, height, max_players=9):
         
         if frames:
             _animation_cache[cache_key] = frames
+            # Sauvegarder dans le cache persistant
+            save_cached_frames(player_index, width, height, frames, player_path)
             loaded_count += 1
+            from_disk_count += 1
     
     elapsed = pygame.time.get_ticks() - start_time
-    print(f"✓ {loaded_count} personnages préchargés en {elapsed}ms")
+    if from_cache_count > 0:
+        print(f"✓ {loaded_count} personnages préchargés en {elapsed}ms ({from_cache_count} depuis le cache, {from_disk_count} depuis le disque)")
+    else:
+        print(f"✓ {loaded_count} personnages préchargés en {elapsed}ms (mis en cache pour le prochain démarrage)")
 
 
 class CharacterSelect:

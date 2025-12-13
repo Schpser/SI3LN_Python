@@ -308,6 +308,12 @@ class Game:
         self.btn_level_select = Button(cx, cy + 190, 250, 70, "CHOIX NIVEAU",
                                        self.font_medium)
         
+        # Pause menu buttons
+        self.btn_resume = Button(cx, cy - 60, 250, 70, "REPRENDRE",
+                                self.font_medium, bg_color=GREEN)
+        self.btn_pause_quit = Button(cx, cy + 30, 250, 70, "QUITTER",
+                                     self.font_medium, bg_color=RED)
+        
         # Message display
         self.message = ""
         self.message_color = WHITE
@@ -393,6 +399,8 @@ class Game:
                         self.profile_screen.close()
                     elif self.state == STATE_GAMEPLAY:
                         self.state = STATE_LEVEL_SELECT
+                    elif self.state == STATE_PAUSE:
+                        self.state = STATE_GAMEPLAY
             
             # Profile screen has priority
             if self.profile_screen.active:
@@ -425,6 +433,8 @@ class Game:
                 self.handle_register_events(event)
             elif self.state == STATE_GAMEPLAY:
                 self.handle_gameplay_events(event)
+            elif self.state == STATE_PAUSE:
+                self.handle_pause_events(event)
             elif self.state == STATE_GAME_OVER:
                 self.handle_game_over_events(event)
             elif self.state == STATE_LEVEL_WIN:
@@ -550,6 +560,12 @@ class Game:
     def handle_gameplay_events(self, event):
         """Handle gameplay events"""
         if event.type == pygame.KEYDOWN:
+            # Pause menu with P key
+            if event.key == pygame.K_p:
+                self.prev_state = self.state
+                self.state = STATE_PAUSE
+                return
+            
             if event.key == pygame.K_SPACE:
                 self.shoot_player_bullet()
             
@@ -567,6 +583,23 @@ class Game:
             if self.profile_icon and self.profile_icon.is_clicked(pos):
                 self.prev_state = self.state
                 self.profile_screen.open()
+    
+    def handle_pause_events(self, event):
+        """Handle pause menu events"""
+        if event.type == pygame.KEYDOWN:
+            # P or ESC to resume
+            if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:
+                self.state = STATE_GAMEPLAY
+                return
+        
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pos = event.pos
+            
+            if self.btn_resume.is_clicked(pos):
+                self.state = STATE_GAMEPLAY
+            elif self.btn_pause_quit.is_clicked(pos):
+                # Return to level selector
+                self.state = STATE_LEVEL_SELECT
     
     def handle_game_over_events(self, event):
         """Handle game over screen events"""
@@ -867,6 +900,12 @@ class Game:
         elif self.state == STATE_GAMEPLAY:
             self.update_gameplay()
         
+        elif self.state == STATE_PAUSE:
+            # Update pause menu buttons
+            mouse_pos = pygame.mouse.get_pos()
+            self.btn_resume.update(mouse_pos)
+            self.btn_pause_quit.update(mouse_pos)
+        
         elif self.state == STATE_GAME_OVER:
             self.btn_restart.update(mouse_pos)
             self.btn_finish.update(mouse_pos)
@@ -982,6 +1021,11 @@ class Game:
             self.draw_register()
         elif self.state == STATE_GAMEPLAY:
             self.draw_gameplay()
+        elif self.state == STATE_PAUSE:
+            # Draw gameplay in background (frozen)
+            self.draw_gameplay()
+            # Draw pause menu overlay
+            self.draw_pause_menu()
         elif self.state == STATE_GAME_OVER:
             self.draw_game_over()
         elif self.state == STATE_LEVEL_WIN:
@@ -1169,6 +1213,37 @@ class Game:
             
             if y > self.screen_height - 150:
                 break
+    
+    def draw_pause_menu(self):
+        """Draw pause menu overlay"""
+        # Semi-transparent overlay
+        overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))  # Dark overlay with transparency
+        self.screen.blit(overlay, (0, 0))
+        
+        # Draw pause title
+        pause_text = self.font_large.render("PAUSE", True, WHITE)
+        pause_rect = pause_text.get_rect(center=(self.screen_width // 2, self.screen_height // 2 - 200))
+        self.screen.blit(pause_text, pause_rect)
+        
+        # Draw buttons - ensure they are centered
+        cx = self.screen_width // 2
+        cy = self.screen_height // 2
+        
+        # Reposition buttons to center of screen
+        self.btn_resume.rect.centerx = cx
+        self.btn_resume.rect.centery = cy - 40
+        self.btn_pause_quit.rect.centerx = cx
+        self.btn_pause_quit.rect.centery = cy + 50
+        
+        # Draw buttons
+        self.btn_resume.draw(self.screen)
+        self.btn_pause_quit.draw(self.screen)
+        
+        # Draw hint
+        hint_text = self.font_small.render("Appuyez sur P ou ESC pour reprendre", True, GRAY)
+        hint_rect = hint_text.get_rect(center=(self.screen_width // 2, self.screen_height // 2 + 150))
+        self.screen.blit(hint_text, hint_rect)
     
     def draw_level_win(self):
         """Draw level win screen"""
