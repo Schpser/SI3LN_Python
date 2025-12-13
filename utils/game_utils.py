@@ -15,9 +15,35 @@ def load_image(path, size=None, convert_alpha=True):
     """
     Load an image with error handling
     Returns the image or a colored surface if loading fails
+    
+    DEPRECATED: Use safe_load_image instead for better error handling
     """
+    return safe_load_image(path, size, convert_alpha)
+
+
+def safe_load_image(path, size=None, convert_alpha=True, fallback_color=None):
+    """
+    Safely load an image with comprehensive error handling and logging
+    
+    Args:
+        path: Relative path to the image from assets directory
+        size: Optional tuple (width, height) to scale the image
+        convert_alpha: Whether to use convert_alpha() for transparency
+        fallback_color: Optional RGB tuple for fallback surface (default: from constants)
+        
+    Returns:
+        pygame.Surface: The loaded image or a fallback colored surface
+    """
+    from constants import FALLBACK_IMAGE_COLOR
+    
     try:
         full_path = get_asset_path(path)
+        
+        if not os.path.exists(full_path):
+            # Use print to avoid circular import, logger will be used in game.py
+            print(f"⚠️ Image file not found: {path} (full path: {full_path})")
+            return _create_fallback_surface(size, fallback_color or FALLBACK_IMAGE_COLOR)
+        
         if convert_alpha:
             img = pygame.image.load(full_path).convert_alpha()
         else:
@@ -25,16 +51,24 @@ def load_image(path, size=None, convert_alpha=True):
         
         if size:
             img = pygame.transform.scale(img, size)
+        
         return img
+    except pygame.error as e:
+        print(f"⚠️ Pygame error loading image {path}: {e}")
+        return _create_fallback_surface(size, fallback_color or FALLBACK_IMAGE_COLOR)
     except Exception as e:
-        print(f"Could not load image {path}: {e}")
-        # Return a colored surface as fallback
-        if size:
-            surf = pygame.Surface(size)
-        else:
-            surf = pygame.Surface((100, 100))
-        surf.fill((200, 100, 100))
-        return surf
+        print(f"⚠️ Unexpected error loading image {path}: {e}")
+        return _create_fallback_surface(size, fallback_color or FALLBACK_IMAGE_COLOR)
+
+
+def _create_fallback_surface(size, color):
+    """Create a fallback surface with specified size and color"""
+    if size:
+        surf = pygame.Surface(size)
+    else:
+        surf = pygame.Surface((100, 100))
+    surf.fill(color)
+    return surf
 
 
 def draw_text(screen, text, font, color, x, y, centered=False):

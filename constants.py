@@ -127,3 +127,84 @@ PROFILE_ICON_POSITION = (20, 20)  # Top right offset from screen width
 # Email settings (for future password reset functionality)
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
+
+# ============================================
+# TIMERS AND DURATIONS (in milliseconds)
+# ============================================
+SHIELD_DURATION = 3000
+MEGA_SHOT_DURATION = 5000
+SPECIAL_ATTACK_COOLDOWN = 10000  # 10 seconds between special attacks
+MESSAGE_DISPLAY_DURATION = 180  # 3 seconds at 60 FPS
+DEBUFF_FROZEN_BASE_DURATION = 1000
+DEBUFF_BLINDED_BASE_DURATION = 1000
+DEBUFF_ROOTED_BASE_DURATION = 1500
+DEBUFF_DURATION_MAX = 3500
+DEBUFF_FROZEN_LEVEL_MULTIPLIER = 200
+DEBUFF_BLINDED_LEVEL_MULTIPLIER = 200
+DEBUFF_ROOTED_LEVEL_MULTIPLIER = 150
+
+# ============================================
+# FONT SIZES
+# ============================================
+FONT_SIZE_LARGE = 70
+FONT_SIZE_MEDIUM = 40
+FONT_SIZE_SMALL = 28
+FONT_SIZE_TINY = 20
+
+# ============================================
+# SPRITE AND IMAGE SIZES
+# ============================================
+PLAYER_PORTRAIT_SIZE = 60
+ENEMY_SIZE = 60
+BOSS_SIZE = 100
+BULLET_SIZE_PLAYER = (15, 25)
+BULLET_SIZE_ENEMY = (10, 20)
+EXPLOSION_SIZE = (60, 60)
+ANIMATION_SIZE_PREVIEW = (80, 80)
+ANIMATION_SIZE_CHARACTER_SELECT = (160, 160)
+
+# ============================================
+# PROBABILITIES (0.0 to 1.0)
+# ============================================
+BONUS_DROP_CHANCE = 0.2  # 20% chance to drop bonus when enemy is killed
+ENEMY_SHOOT_CHANCE_BASE = 0.1  # Base chance for enemy to shoot
+
+# ============================================
+# DISTANCES AND THRESHOLDS
+# ============================================
+ENEMY_PLAYER_COLLISION_DISTANCE = 100  # Distance threshold for enemy-player collision
+ENEMY_SPAWN_OFFSET_Y = 100
+PLAYER_START_Y_OFFSET = 100  # Player starts at screen_height - this offset
+ENEMY_SPAWN_START_Y = 80
+ENEMY_SPAWN_MIN_Y_THRESHOLD = 4  # Division factor for min spawn Y (screen_height // 4)
+
+# ============================================
+# FALLBACK COLORS
+# ============================================
+FALLBACK_BG_COLOR = (30, 30, 60)  # Dark blue fallback for menu background
+FALLBACK_ENEMY_COLOR = (150, 50, 50)  # Red fallback for enemy sprites
+FALLBACK_IMAGE_COLOR = (200, 100, 100)  # Fallback color for failed image loads
+
+# ============================================
+# ENEMY SPAWN PARAMETERS
+# ============================================
+ENEMY_SPAWN_BASE_ROWS = 3
+ENEMY_SPAWN_BASE_COLS = 5
+ENEMY_SPAWN_MAX_ROWS = 6
+ENEMY_SPAWN_MAX_COLS = 9
+ENEMY_SPACING_X = 20
+ENEMY_SPACING_Y = 20
+ENEMY_WIDTH = 60
+ENEMY_HEIGHT = 60
+
+# ============================================
+# WORLD FALLBACK COLORS
+# ============================================
+WORLD_FALLBACK_COLORS = {
+    "Space": (10, 10, 30),
+    "Desert": (139, 100, 50),
+    "Forest": (20, 80, 20),
+    "Marine": (10, 50, 100),
+    "Apocalyptic": (80, 20, 20)
+}
+DEFAULT_FALLBACK_COLOR = (50, 50, 50)

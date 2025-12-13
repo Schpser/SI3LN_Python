@@ -7,17 +7,24 @@ import random
 import sys
 import os
 from constants import *
-from utils import load_image, draw_text, load_enemy_images, load_boss_images, create_bullet_surface
+from utils import load_image, draw_text, load_enemy_images, load_boss_images, create_bullet_surface, safe_load_image
+from utils.logger import setup_logging, get_logger, info, warning, error, debug
 from auth import AuthSystem
 from scores import ScoreManager
 from profile import ProfileScreen
 from level_selector import LevelSelector
 from entities import Player, Enemy, Bullet, Explosion, Bonus, SpecialAttack
-from ui_components import Button, InputField, ProfileIcon, Panel, PopUp, ImageButton
+from ui_components import Button, InputField, ProfileIcon, Panel, PopUp, ImageButton, preload_character_animations
+from managers import CollisionManager, EntityManager, GameState
 
 
 class Game:
     def __init__(self):
+        # Initialize logging
+        setup_logging()
+        self.logger = get_logger()
+        info("Initializing game...")
+        
         # Initialize Pygame
         pygame.init()
         
@@ -34,8 +41,9 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         
-        # Game state
-        self.state = STATE_MAIN_MENU
+        # Game state manager
+        self.state_manager = GameState(STATE_MAIN_MENU)
+        self.state = STATE_MAIN_MENU  # Keep for backward compatibility
         self.prev_state = None
         
         # Systems
@@ -52,8 +60,8 @@ class Game:
         # Nouveaux systèmes
         self.bonuses = pygame.sprite.Group()
         self.active_bonuses = {
-            "shield": {"active": False, "timer": 0, "duration": 3000},
-            "mega_shot": {"active": False, "timer": 0, "duration": 5000}
+            "shield": {"active": False, "timer": 0, "duration": SHIELD_DURATION},
+            "mega_shot": {"active": False, "timer": 0, "duration": MEGA_SHOT_DURATION}
         }
         
         self.special_attacks = pygame.sprite.Group()
@@ -67,6 +75,10 @@ class Game:
         
         # Load assets
         self.load_assets()
+        
+        # Initialize managers
+        self.collision_manager = CollisionManager(self)
+        self.entity_manager = EntityManager(self)
         
         # Initialize screens
         self.profile_screen = ProfileScreen(self.screen, self.auth, self.players)
@@ -91,52 +103,48 @@ class Game:
         
         # Timers pour les attaques spéciales
         self.last_special_attack_time = 0
-        self.special_attack_cooldown = 10000  # 10 secondes entre les attaques
+        self.special_attack_cooldown = SPECIAL_ATTACK_COOLDOWN
+        
+        info("Game initialized successfully")
     
     def load_assets(self):
         """Load all game assets with validation - OPTIMIZED with lazy loading"""
         # Fonts - Load Arcade Classic font with fallback
         arcade_font_path = "assets/fonts/ArcadeClassic/ArcadeClassic.TTF"
         try:
-            self.font_large = pygame.font.Font(arcade_font_path, 70)
-            self.font_medium = pygame.font.Font(arcade_font_path, 40)
-            self.font_small = pygame.font.Font(arcade_font_path, 28)
-            self.font_tiny = pygame.font.Font(arcade_font_path, 20)
+            self.font_large = pygame.font.Font(arcade_font_path, FONT_SIZE_LARGE)
+            self.font_medium = pygame.font.Font(arcade_font_path, FONT_SIZE_MEDIUM)
+            self.font_small = pygame.font.Font(arcade_font_path, FONT_SIZE_SMALL)
+            self.font_tiny = pygame.font.Font(arcade_font_path, FONT_SIZE_TINY)
         except Exception as e:
-            print(f"⚠️ Arcade font not found: {e}, using default font")
-            self.font_large = pygame.font.Font(None, 70)
-            self.font_medium = pygame.font.Font(None, 40)
-            self.font_small = pygame.font.Font(None, 28)
-            self.font_tiny = pygame.font.Font(None, 20)
+            warning(f"Arcade font not found: {e}, using default font")
+            self.font_large = pygame.font.Font(None, FONT_SIZE_LARGE)
+            self.font_medium = pygame.font.Font(None, FONT_SIZE_MEDIUM)
+            self.font_small = pygame.font.Font(None, FONT_SIZE_SMALL)
+            self.font_tiny = pygame.font.Font(None, FONT_SIZE_TINY)
         
         # Backgrounds - Load with validation
         try:
-            self.menu_bg = load_image("worlds/home_page.jpg", 
-                                      (self.screen_width, self.screen_height), False)
+            self.menu_bg = safe_load_image("worlds/home_page.jpg", 
+                                           (self.screen_width, self.screen_height), False)
         except Exception as e:
-            print(f"⚠️ Menu background not found: {e}")
+            warning(f"Menu background not found: {e}")
             self.menu_bg = pygame.Surface((self.screen_width, self.screen_height))
-            self.menu_bg.fill((30, 30, 60))  # Dark blue fallback
+            self.menu_bg.fill(FALLBACK_BG_COLOR)
         
         # Load all world backgrounds with validation
         self.world_backgrounds = {}
         for world_key, world_data in WORLDS.items():
             try:
                 bg_path = f"worlds/{world_data['background']}"
-                self.world_backgrounds[world_key] = load_image(bg_path, 
-                                                              (self.screen_width, self.screen_height), False)
+                self.world_backgrounds[world_key] = safe_load_image(bg_path, 
+                                                                     (self.screen_width, self.screen_height), False)
             except Exception as e:
-                print(f"⚠️ Background for {world_key} not found: {e}")
+                warning(f"Background for {world_key} not found: {e}")
                 # Create colored fallback based on world
-                fallback_colors = {
-                    "Space": (10, 10, 30),
-                    "Desert": (139, 100, 50),
-                    "Forest": (20, 80, 20),
-                    "Marine": (10, 50, 100),
-                    "Apocalyptic": (80, 20, 20)
-                }
                 self.world_backgrounds[world_key] = pygame.Surface((self.screen_width, self.screen_height))
-                self.world_backgrounds[world_key].fill(fallback_colors.get(world_key, (50, 50, 50)))
+                fallback_color = WORLD_FALLBACK_COLORS.get(world_key, DEFAULT_FALLBACK_COLOR)
+                self.world_backgrounds[world_key].fill(fallback_color)
         
         self.game_bg = self.world_backgrounds.get("Space")
         
@@ -147,14 +155,14 @@ class Game:
         self.players_animation_folders = []  # Store folder paths for later
         base_path = "assets/players"
         
-        print("📥 Loading player portraits (optimized with lazy loading)...")
+        info("Loading player portraits (optimized with lazy loading)...")
         start_time = pygame.time.get_ticks()
         
         for i in range(1, 9):
             player_folder = os.path.join(base_path, f"player_{i}")
             
             if not os.path.exists(player_folder):
-                print(f"⚠️ Player folder not found: {player_folder}")
+                warning(f"Player folder not found: {player_folder}")
                 self.players.append(None)
                 self.players_gameplay.append(None)
                 self.players_animation_folders.append(None)
@@ -168,24 +176,35 @@ class Game:
                 try:
                     image_large = pygame.image.load(image_file)
                     self.players.append(image_large)
-                    image_small = pygame.transform.scale(image_large, (60, 60))
+                    image_small = pygame.transform.scale(image_large, (PLAYER_PORTRAIT_SIZE, PLAYER_PORTRAIT_SIZE))
                     self.players_gameplay.append(image_small)
                     
                     # Store folder path for animation loading later (when profile is opened)
                     self.players_animation_folders.append(player_folder)
                 except Exception as e:
-                    print(f"⚠️ Could not load player image {image_file}: {e}")
+                    error(f"Could not load player image {image_file}: {e}")
                     self.players.append(None)
                     self.players_gameplay.append(None)
                     self.players_animation_folders.append(None)
             else:
-                print(f"⚠️ No PNG files found in {player_folder}")
+                warning(f"No PNG files found in {player_folder}")
                 self.players.append(None)
                 self.players_gameplay.append(None)
                 self.players_animation_folders.append(None)
         
         elapsed = pygame.time.get_ticks() - start_time
-        print(f"✓ Players loaded in {elapsed}ms (lazy loading enabled)")
+        info(f"Players loaded in {elapsed}ms (lazy loading enabled)")
+        
+        # Précharger toutes les animations des personnages pour une sélection fluide
+        info("Preloading character animations...")
+        preload_start = pygame.time.get_ticks()
+        
+        # Précharger les tailles utilisées dans le jeu
+        preload_character_animations(ANIMATION_SIZE_PREVIEW[0], ANIMATION_SIZE_PREVIEW[1], max_players=9)
+        preload_character_animations(ANIMATION_SIZE_CHARACTER_SELECT[0], ANIMATION_SIZE_CHARACTER_SELECT[1], max_players=9)
+        
+        preload_elapsed = pygame.time.get_ticks() - preload_start
+        info(f"Animations preloaded in {preload_elapsed}ms - Ready for smooth selection!")
         
         # Bullets
         try:
@@ -193,19 +212,19 @@ class Game:
             self.player_bullet_img = create_bullet_surface(
                 default_colors["player"][0], 
                 default_colors["player"][1], 
-                (15, 25)
+                BULLET_SIZE_PLAYER
             )
             self.enemy_bullet_img = create_bullet_surface(
                 default_colors["enemy"][0], 
                 default_colors["enemy"][1], 
-                (10, 20)
+                BULLET_SIZE_ENEMY
             )
         except Exception as e:
-            print(f"⚠️ Could not create bullets: {e}")
+            warning(f"Could not create bullets: {e}")
             # Create simple fallback bullets
-            self.player_bullet_img = pygame.Surface((15, 25))
+            self.player_bullet_img = pygame.Surface(BULLET_SIZE_PLAYER)
             self.player_bullet_img.fill(CYAN)
-            self.enemy_bullet_img = pygame.Surface((10, 20))
+            self.enemy_bullet_img = pygame.Surface(BULLET_SIZE_ENEMY)
             self.enemy_bullet_img.fill(RED)
         
         # Enemies - Load with validation
@@ -214,15 +233,15 @@ class Game:
         
         for world_key in WORLDS.keys():
             try:
-                self.enemy_images[world_key] = load_enemy_images(world_key, (60, 60))
-                self.boss_images[world_key] = load_boss_images(world_key, (100, 100))
+                self.enemy_images[world_key] = load_enemy_images(world_key, (ENEMY_SIZE, ENEMY_SIZE))
+                self.boss_images[world_key] = load_boss_images(world_key, (BOSS_SIZE, BOSS_SIZE))
             except Exception as e:
-                print(f"⚠️ Could not load enemies for {world_key}: {e}")
+                warning(f"Could not load enemies for {world_key}: {e}")
                 # Create simple fallback enemies
                 fallback = []
                 for _ in range(3):
-                    enemy_surf = pygame.Surface((60, 60))
-                    enemy_surf.fill((150, 50, 50))
+                    enemy_surf = pygame.Surface((ENEMY_SIZE, ENEMY_SIZE))
+                    enemy_surf.fill(FALLBACK_ENEMY_COLOR)
                     fallback.append(enemy_surf)
                 self.enemy_images[world_key] = fallback
                 self.boss_images[world_key] = fallback
@@ -348,7 +367,7 @@ class Game:
         
         self.selected_character = char_idx
     
-    def show_message(self, text, color=WHITE, duration=180):
+    def show_message(self, text, color=WHITE, duration=MESSAGE_DISPLAY_DURATION):
         """Show a temporary message"""
         self.message = text
         self.message_color = color
@@ -385,11 +404,11 @@ class Game:
             if self.level_selector.active:
                 result = self.level_selector.handle_event(event)
                 if result:
-                    print(f"[DEBUG] Level selector returned: {result}")
+                    debug(f"Level selector returned: {result}")
                     if result[0] == "START_LEVEL":
                         self.current_world = result[1]
                         self.current_level = result[2]
-                        print(f"[DEBUG] Starting world={self.current_world}, level={self.current_level}")
+                        debug(f"Starting world={self.current_world}, level={self.current_level}")
                         self.level_selector.close()
                         self.start_level()
                     elif result[0] == "BACK":
@@ -590,13 +609,13 @@ class Game:
     
     def start_level(self):
         """Start a new level"""
-        print(f"[DEBUG] Starting level {self.current_level} in world {self.current_world}")
+        debug(f"Starting level {self.current_level} in world {self.current_world}")
         self.state = STATE_GAMEPLAY
         self.lives = MAX_LIVES
         
         # Set the background for the current world
         self.game_bg = self.world_backgrounds.get(self.current_world, self.world_backgrounds["Space"])
-        print(f"[DEBUG] Background set for world: {self.current_world}")
+        debug(f"Background set for world: {self.current_world}")
         
         # Create bullets with world-specific colors
         if self.current_world in WORLDS and "bullet_colors" in WORLDS[self.current_world]:
@@ -605,16 +624,16 @@ class Game:
             self.player_bullet_img = create_bullet_surface(
                 colors["player"][0], 
                 colors["player"][1], 
-                (15, 25)
+                BULLET_SIZE_PLAYER
             )
             
             self.enemy_bullet_img = create_bullet_surface(
                 colors["enemy"][0], 
                 colors["enemy"][1], 
-                (10, 20)
+                BULLET_SIZE_ENEMY
             )
             
-            print(f"[DEBUG] Bullets created with colors for {self.current_world}")
+            debug(f"Bullets created with colors for {self.current_world}")
         
         # Load explosion images specific to the world
         explosion_file_map = {
@@ -628,11 +647,11 @@ class Game:
         if self.current_world in explosion_file_map:
             player_exp_path, enemy_exp_path = explosion_file_map[self.current_world]
             try:
-                self.player_explosion_img = load_image(player_exp_path, (60, 60))
-                self.enemy_explosion_img = load_image(enemy_exp_path, (60, 60))
-                print(f"[DEBUG] Loaded explosion images for {self.current_world}")
+                self.player_explosion_img = safe_load_image(player_exp_path, EXPLOSION_SIZE)
+                self.enemy_explosion_img = safe_load_image(enemy_exp_path, EXPLOSION_SIZE)
+                debug(f"Loaded explosion images for {self.current_world}")
             except Exception as e:
-                print(f"[DEBUG] Could not load explosion images: {e}")
+                warning(f"Could not load explosion images: {e}")
                 self.player_explosion_img = None
                 self.enemy_explosion_img = None
         else:
@@ -659,50 +678,23 @@ class Game:
         # Create player
         player_img = self.players_gameplay[self.selected_character]  # ✅ APRÈS
         self.player = Player(self.screen_width // 2, 
-                            self.screen_height - 100,
+                            self.screen_height - PLAYER_START_Y_OFFSET,
                             player_img,
                             self.screen_width,
                             self.screen_height)
         
         # Create enemies
-        print(f"[DEBUG] Spawning enemies...")
+        debug("Spawning enemies...")
         self.spawn_enemies()
-        print(f"[DEBUG] Level started successfully! Enemies: {len(self.enemies)}")
-        print(f"[DEBUG] Player created: {self.player is not None}")
+        debug(f"Level started successfully! Enemies: {len(self.enemies)}")
+        debug(f"Player created: {self.player is not None}")
     def spawn_enemies(self):
         """Spawn enemies for current level"""
-        base_rows = 3
-        base_cols = 5
-        rows = min(base_rows + self.current_level // 2, 6)
-        cols = min(base_cols + self.current_level // 2, 9)
-        
-        enemy_width = 60
-        enemy_height = 60
-        spacing_x = 20
-        spacing_y = 20
-        
-        total_width = cols * (enemy_width + spacing_x)
-        start_x = (self.screen_width - total_width) // 2
-        start_y = 80
-        
-        for row in range(rows):
-            for col in range(cols):
-                x = start_x + col * (enemy_width + spacing_x) + enemy_width // 2
-                y = start_y + row * (enemy_height + spacing_y) + enemy_height // 2
-                
-                enemy_img = random.choice(self.enemy_images[self.current_world])
-                enemy = Enemy(x, y, enemy_img, self.screen_width, self.current_level)
-                self.enemies.add(enemy)
+        self.entity_manager.spawn_enemies()
     
     def shoot_player_bullet(self):
         """Player shoots a bullet"""
-        if self.player and len(self.player_bullets) < MAX_PLAYER_BULLETS:
-            bullet = Bullet(self.player.rect.centerx,
-                           self.player.rect.top,
-                           self.player_bullet_img,
-                           True,
-                           self.screen_height)
-            self.player_bullets.add(bullet)
+        self.entity_manager.shoot_player_bullet()
     
     def activate_shield(self):
         """Active le bouclier du joueur"""
@@ -714,22 +706,13 @@ class Game:
     def mega_shot(self):
         """Tir spécial plus puissant"""
         if self.active_bonuses["mega_shot"]["active"]:
-            # Tir triple
-            for i in range(-1, 2):
-                bullet = Bullet(self.player.rect.centerx + i*20,
-                               self.player.rect.top,
-                               self.player_bullet_img,
-                               True,
-                               self.screen_height)
-                self.player_bullets.add(bullet)
+            self.entity_manager.shoot_mega_shot()
             self.active_bonuses["mega_shot"]["active"] = False
             self.show_message("Mega tir activé!", YELLOW)
     
     def spawn_bonus(self, x, y):
         """Fait tomber un bonus aléatoire"""
-        bonus_type = random.choice(["life", "shield", "mega_shot"])
-        bonus = Bonus(x, y, bonus_type)
-        self.bonuses.add(bonus)
+        self.entity_manager.spawn_bonus(x, y)
     
     def activate_bonus(self, bonus_type):
         """Active un bonus"""
@@ -796,7 +779,10 @@ class Game:
         self.special_attacks.add(attack)
         self.player_debuffs["rooted"] = True
         self.player_debuffs["timer"] = pygame.time.get_ticks()
-        self.player_debuffs["duration"] = min(1500 + (self.current_level * 150), 3500)
+        self.player_debuffs["duration"] = min(
+            DEBUFF_ROOTED_BASE_DURATION + (self.current_level * DEBUFF_ROOTED_LEVEL_MULTIPLIER),
+            DEBUFF_DURATION_MAX
+        )
         self.show_message("Racines!", BROWN)
     
     def load_player_animations(self, player_index):
@@ -811,7 +797,7 @@ class Game:
         try:
             png_files = sorted([f for f in os.listdir(folder) if f.lower().endswith(".png")])
             
-            print(f"📥 Loading animations for player_{player_index + 1} ({len(png_files)} frames)...")
+            info(f"Loading animations for player_{player_index + 1} ({len(png_files)} frames)...")
             start_time = pygame.time.get_ticks()
             
             for png_file in png_files:
@@ -820,12 +806,12 @@ class Game:
                     frame = pygame.image.load(frame_path)
                     frames.append(frame)
                 except Exception as e:
-                    print(f"⚠️ Could not load frame {png_file}: {e}")
+                    warning(f"Could not load frame {png_file}: {e}")
             
             elapsed = pygame.time.get_ticks() - start_time
-            print(f"✓ Loaded {len(frames)} animation frames in {elapsed}ms")
+            info(f"Loaded {len(frames)} animation frames in {elapsed}ms")
         except Exception as e:
-            print(f"⚠️ Error loading animations: {e}")
+            error(f"Error loading animations: {e}")
         
         return frames if frames else None
     
@@ -896,10 +882,10 @@ class Game:
     def update_gameplay(self):
         """Update gameplay logic"""
         if not self.player:
-            print("[DEBUG] No player!")
+            debug("No player!")
             return
         
-        print(f"[DEBUG] In update_gameplay - Enemies: {len(self.enemies)}, State: {self.state}")
+        debug(f"In update_gameplay - Enemies: {len(self.enemies)}, State: {self.state}")
         
         # Update player (sauf si rooté)
         keys = pygame.key.get_pressed()
@@ -955,11 +941,11 @@ class Game:
         # Collision detection
         self.check_collisions()
         
-        print(f"[DEBUG] Before win check - Enemies: {len(self.enemies)}")
+        debug(f"Before win check - Enemies: {len(self.enemies)}")
         
         # Check win condition
         if len(self.enemies) == 0:
-            print(f"[DEBUG] WIN CONDITION TRIGGERED!")
+            debug("WIN CONDITION TRIGGERED!")
             self.state = STATE_LEVEL_WIN
             if self.auth.current_user:
                 self.auth.update_user_data(
@@ -981,77 +967,7 @@ class Game:
     
     def check_collisions(self):
         """Check all collisions"""
-        # Player bullets hit enemies
-        for bullet in self.player_bullets:
-            hits = pygame.sprite.spritecollide(bullet, self.enemies, True)
-            if hits:
-                bullet.kill()
-                self.current_score += 10 * self.current_level
-                for enemy in hits:
-                    explosion = Explosion(enemy.rect.centerx, enemy.rect.centery, 
-                                        explosion_img=self.enemy_explosion_img)
-                    self.explosions.add(explosion)
-                    # Chance de faire tomber un bonus
-                    if random.random() < 0.2:  # 20% de chance
-                        self.spawn_bonus(enemy.rect.centerx, enemy.rect.centery)
-        
-        # Enemy bullets hit player
-        if self.player:
-            hits = pygame.sprite.spritecollide(self.player, self.enemy_bullets, True)
-            if hits:
-                self.lives -= len(hits)
-                if self.lives <= 0:
-                    explosion = Explosion(self.player.rect.centerx, 
-                                        self.player.rect.centery, RED,
-                                        explosion_img=self.player_explosion_img)
-                    self.explosions.add(explosion)
-                    self.player = None
-                    
-                    username = self.auth.current_user or "Guest"
-                    if username != "Guest":
-                        position, is_top_20 = self.score_manager.add_score(
-                            username, self.current_score, self.current_level
-                        )
-                    
-                    self.state = STATE_GAME_OVER
-        
-        # Enemies reach player (with dynamic spawn boundary check)
-        if self.player:
-            hits = pygame.sprite.spritecollide(self.player, self.enemies, False)
-            for enemy in hits:
-                # Calculate distance to prevent initial spawn collisions
-                dx = self.player.rect.centerx - enemy.rect.centerx
-                dy = self.player.rect.centery - enemy.rect.centery
-                distance = (dx*dx + dy*dy) ** 0.5
-                
-                # Only register collision if:
-                # 1. Enemy is close enough (distance < 100)
-                # 2. Enemy has dropped significantly from spawn (y > spawn_y + 100)
-                # 3. Enemy is below middle screen
-                min_spawn_y = self.screen_height // 4  # Dynamic based on screen
-                if distance < 100 and enemy.rect.y > min_spawn_y:
-                    enemy.kill()
-                    self.lives -= 2
-                    if self.lives <= 0:
-                        self.player = None
-                        self.state = STATE_GAME_OVER
-        
-        # Player collects bonuses
-        if self.player:
-            collected_bonuses = pygame.sprite.spritecollide(self.player, self.bonuses, True)
-            for bonus in collected_bonuses:
-                self.activate_bonus(bonus.bonus_type)
-        
-        # Special attacks hit player
-        if self.player:
-            for attack in self.special_attacks:
-                if pygame.sprite.collide_rect(self.player, attack):
-                    if attack.world == "Space":
-                        self.lives -= attack.damage
-                        attack.kill()
-                        if self.lives <= 0:
-                            self.player = None
-                            self.state = STATE_GAME_OVER
+        self.collision_manager.check_all_collisions()
     
     def draw(self):
         """Draw everything"""
@@ -1298,16 +1214,16 @@ class Game:
             self.level_selector = LevelSelector(self.screen, WORLDS)
             self.update_profile_icon()
             
-            print(f"✓ Fullscreen toggled: {self.is_fullscreen}")
+            info(f"Fullscreen toggled: {self.is_fullscreen}")
         except Exception as e:
-            print(f"⚠️ Error toggling fullscreen: {e}")
+            error(f"Error toggling fullscreen: {e}")
             self.is_fullscreen = not self.is_fullscreen  # Revert on error
     
     def handle_resize(self, width, height):
         """Handle window resize with proper UI recreation"""
         # Validate minimum window size
         if width < 800 or height < 600:
-            print(f"⚠️ Window too small ({width}x{height}), minimum is 800x600")
+            warning(f"Window too small ({width}x{height}), minimum is 800x600")
             return
         
         self.screen_width = width
@@ -1337,36 +1253,13 @@ class Game:
             self.level_selector = LevelSelector(self.screen, WORLDS)
             self.update_profile_icon()
             
-            print(f"✓ Window resized to {width}x{height}")
+            info(f"Window resized to {width}x{height}")
         except Exception as e:
-            print(f"⚠️ Error during resize: {e}")
+            error(f"Error during resize: {e}")
     
     def cleanup_sprites(self):
         """Clean up and remove all dead sprites"""
-        # Remove dead sprites from all groups
-        for sprite in self.enemies:
-            if not sprite.alive():
-                sprite.kill()
-        
-        for sprite in self.player_bullets:
-            if not sprite.alive():
-                sprite.kill()
-        
-        for sprite in self.enemy_bullets:
-            if not sprite.alive():
-                sprite.kill()
-        
-        for sprite in self.explosions:
-            if not sprite.alive():
-                sprite.kill()
-        
-        for sprite in self.bonuses:
-            if not sprite.alive():
-                sprite.kill()
-        
-        for sprite in self.special_attacks:
-            if not sprite.alive():
-                sprite.kill()
+        self.entity_manager.cleanup_sprites()
     
     def run(self):
         """Main game loop"""
@@ -1417,7 +1310,7 @@ class AnimatedPlayer:
         
         # Check if folder exists
         if not os.path.exists(player_path):
-            print(f"⚠️ Dossier introuvable : {player_path}")
+            warning(f"Dossier introuvable : {player_path}")
             return
         
         # Load all frame files (supports both formats)
@@ -1441,7 +1334,7 @@ class AnimatedPlayer:
         
         frame_files.sort(key=get_frame_number)
         
-        print(f"📥 Loading {len(frame_files)} animation frames for player_{self.player_index + 1}...")
+        info(f"Loading {len(frame_files)} animation frames for player_{self.player_index + 1}...")
         start_time = pygame.time.get_ticks()
         
         for frame_file in frame_files:
@@ -1451,13 +1344,13 @@ class AnimatedPlayer:
                 scaled = pygame.transform.scale(image, (self.width, self.height))
                 self.frames.append(scaled)
             except pygame.error as e:
-                print(f"⚠️ Impossible de charger {frame_path}: {e}")
+                warning(f"Impossible de charger {frame_path}: {e}")
         
         elapsed = pygame.time.get_ticks() - start_time
         if self.frames:
-            print(f"✓ {len(self.frames)} frames chargées pour player_{self.player_index + 1} en {elapsed}ms")
+            info(f"{len(self.frames)} frames chargées pour player_{self.player_index + 1} en {elapsed}ms")
         else:
-            print(f"⚠️ Aucune frame chargée pour player_{self.player_index + 1}")
+            warning(f"Aucune frame chargée pour player_{self.player_index + 1}")
     
     def update(self, dt=1/60):
         """Update animation frame"""

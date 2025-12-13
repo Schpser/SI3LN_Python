@@ -6,6 +6,10 @@ import pygame
 from constants import *
 import os
 
+# Cache global pour les frames d'animation des personnages
+# Structure: {(player_index, width, height): [frames]}
+_animation_cache = {}
+
 
 class Button:
     def __init__(self, x, y, width, height, text, font, 
@@ -348,7 +352,7 @@ class PopUp:
 
 
 class AnimatedPlayer:
-    """Affiche un personnage animé à partir de frames"""
+    """Affiche un personnage animé à partir de frames avec cache pour performance"""
     def __init__(self, x, y, width, height, player_index):
         self.x = x
         self.y = y
@@ -356,7 +360,7 @@ class AnimatedPlayer:
         self.height = height
         self.player_index = player_index
         
-        # Load frames
+        # Load frames (utilise le cache si disponible)
         self.frames = []
         self.load_frames()
         
@@ -369,7 +373,18 @@ class AnimatedPlayer:
         self.rect = pygame.Rect(x, y, width, height)
     
     def load_frames(self):
-        """Load all animation frames for the player"""
+        """Load all animation frames for the player (utilise le cache global)"""
+        global _animation_cache
+        
+        # Clé du cache: (player_index, width, height)
+        cache_key = (self.player_index, self.width, self.height)
+        
+        # Vérifier si les frames sont déjà en cache
+        if cache_key in _animation_cache:
+            self.frames = _animation_cache[cache_key]
+            return
+        
+        # Sinon, charger depuis le disque
         player_path = f"assets/players/player_{self.player_index + 1}"
         
         # Check if folder exists
@@ -398,6 +413,8 @@ class AnimatedPlayer:
         
         frame_files.sort(key=get_frame_number)
         
+        # Charger et mettre en cache
+        start_time = pygame.time.get_ticks()
         for frame_file in frame_files:
             frame_path = os.path.join(player_path, frame_file)
             try:
@@ -407,10 +424,25 @@ class AnimatedPlayer:
             except pygame.error as e:
                 print(f"⚠️ Impossible de charger {frame_path}: {e}")
         
+        # Mettre en cache pour réutilisation future
         if self.frames:
-            print(f"✓ {len(self.frames)} frames chargées pour player_{self.player_index + 1}")
+            _animation_cache[cache_key] = self.frames
+            elapsed = pygame.time.get_ticks() - start_time
+            print(f"✓ {len(self.frames)} frames chargées pour player_{self.player_index + 1} en {elapsed}ms (mis en cache)")
         else:
             print(f"⚠️ Aucune frame chargée pour player_{self.player_index + 1}")
+    
+    def change_player(self, new_player_index):
+        """Change le personnage affiché (utilise le cache si disponible)"""
+        if new_player_index == self.player_index:
+            return  # Déjà le bon personnage
+        
+        self.player_index = new_player_index
+        self.current_frame = 0
+        self.elapsed_time = 0.0
+        
+        # Recharger les frames (utilise le cache si disponible)
+        self.load_frames()
     
     def update(self, dt=1/60):
         """Update animation frame"""
@@ -456,6 +488,68 @@ class AnimatedPlayer:
         return self.frames[current_frame_index]
 
 
+def preload_character_animations(width, height, max_players=9):
+    """Précharge les animations de tous les personnages disponibles dans le cache"""
+    global _animation_cache
+    
+    print("🔄 Préchargement des animations des personnages...")
+    start_time = pygame.time.get_ticks()
+    loaded_count = 0
+    
+    for player_index in range(max_players):
+        cache_key = (player_index, width, height)
+        
+        # Vérifier si déjà en cache
+        if cache_key in _animation_cache:
+            continue
+        
+        # Charger les frames
+        player_path = f"assets/players/player_{player_index + 1}"
+        if not os.path.exists(player_path):
+            continue
+        
+        # Load all frame files
+        frame_files = sorted([
+            f for f in os.listdir(player_path) 
+            if (f.lower().startswith('frame_') or f.lower().startswith('animatediff_')) 
+            and f.lower().endswith('.png')
+        ])
+        
+        if not frame_files:
+            continue
+        
+        # Sort by frame number
+        def get_frame_number(filename):
+            if filename.lower().startswith('frame_'):
+                return int(filename.split('_')[1])
+            else:
+                import re
+                match = re.search(r'\.(\d+)\.png', filename)
+                if match:
+                    return int(match.group(1))
+                return 999999
+        
+        frame_files.sort(key=get_frame_number)
+        
+        # Charger et mettre en cache
+        frames = []
+        for frame_file in frame_files:
+            frame_path = os.path.join(player_path, frame_file)
+            try:
+                image = pygame.image.load(frame_path)
+                scaled = pygame.transform.scale(image, (width, height))
+                frames.append(scaled)
+            except pygame.error as e:
+                print(f"⚠️ Impossible de charger {frame_path}: {e}")
+        
+        if frames:
+            _animation_cache[cache_key] = frames
+            loaded_count += 1
+    
+    elapsed = pygame.time.get_ticks() - start_time
+    print(f"✓ {loaded_count} personnages préchargés en {elapsed}ms")
+
+
 class CharacterSelect:
     """Character selection interface"""
     def __init__(self, screen_width, screen_height, font):
@@ -477,6 +571,11 @@ class CharacterSelect:
                 slot = ImageButton(x, y, slot_width, slot_height, None, font, "", border_color=WHITE)
                 self.character_slots.append(slot)
         
+        # Les animations sont déjà préchargées au démarrage du jeu (dans Game.load_assets())
+        # Pas besoin de les recharger ici - le cache les réutilisera automatiquement
+        preview_width = 160
+        preview_height = 160
+        
         # Selected character index
         self.selected_character = 0
         self.update_selected_character()
@@ -484,7 +583,7 @@ class CharacterSelect:
         # Create animated player preview (positioned on the right side of panel)
         preview_x = self.info_panel.rect.right - 200
         preview_y = self.info_panel.rect.centery - 80
-        self.animated_player = AnimatedPlayer(preview_x, preview_y, 160, 160, self.selected_character)
+        self.animated_player = AnimatedPlayer(preview_x, preview_y, preview_width, preview_height, self.selected_character)
         
         # Back and Confirm buttons
         self.back_button = Button(50, screen_height - 100, 150, 50, "Back", font, bg_color=(150, 30, 30), text_color=WHITE)
@@ -509,11 +608,11 @@ class CharacterSelect:
                     print(f"⚠️ Character image not found: {char_image_path}")
             else:
                 slot.image = None  # Clear image for unselected slots
-            
-            # Update animated player preview
-            if i == self.selected_character:
-                self.animated_player.player_index = i
-                self.animated_player.reset()
+        
+        # Update animated player preview (utilise le cache pour performance)
+        if self.animated_player.player_index != self.selected_character:
+            self.animated_player.change_player(self.selected_character)
+        self.animated_player.reset()
     
     def draw_character_info(self, screen):
         """Draw the information of the selected character"""
