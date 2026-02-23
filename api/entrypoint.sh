@@ -12,7 +12,8 @@ if [ -n "$DATABASE_URL" ]; then
 
     echo "  Host: $DB_HOST  Port: $DB_PORT"
 
-    MAX_RETRIES=60
+    # allow override for slow databases or first-time init
+    MAX_RETRIES=${DB_WAIT_MAX_RETRIES:-60}
     COUNT=0
     until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U si3ln_user > /dev/null 2>&1; do
         COUNT=$((COUNT + 1))
