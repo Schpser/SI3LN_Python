@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SI3LN – Play</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000428; }
+
+    /* full-viewport iframe */
+    #pygbag-frame {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: transparent;
+    }
+
+    /* loading overlay shown until iframe fires its first load event */
+    #overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.2rem;
+      background: linear-gradient(180deg, #000428 0%, #004e92 100%);
+      z-index: 20;
+      transition: opacity 0.5s ease;
+      font-family: 'Courier New', monospace;
+      color: #fff;
+    }
+    #overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .logo {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      letter-spacing: 0.6rem;
+      background: linear-gradient(90deg, #00d2ff, #3a47d5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    #status  { font-size: 0.95rem; color: #aac; min-height: 1.4em; text-align: center; }
+    #bar-wrap {
+      width: min(340px, 80vw); height: 8px;
+      background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;
+    }
+    #bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #00d2ff, #3a47d5);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    /* HUD always on top of iframe */
+    #hud {
+      position: absolute;
+      top: 12px; right: 14px;
+      display: flex; gap: 8px;
+      z-index: 30;
+      font-family: 'Courier New', monospace;
+    }
+    .hud-btn {
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 5px 12px; border-radius: 5px;
+      cursor: pointer; font-size: 0.75rem;
+      transition: background 0.2s;
+    }
+    .hud-btn:hover { background: rgba(0,0,0,0.8); }
+
+    /* guest banner */
+    #guest-banner {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      background: rgba(255,165,0,0.85);
+      color: #000; text-align: center;
+      padding: 6px 12px; font-size: 0.82rem;
+      z-index: 25;
+      font-family: sans-serif;
+    }
+    #guest-banner a { color: #002; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="overlay">
+  <div class="logo">ARCAD3X</div>
+  <div id="status">Preparing Python game…</div>
+  <div id="bar-wrap"><div id="bar"></div></div>
+</div>
+
+<!-- Pygbag iframe – src set by JS after token injection -->
+<iframe id="pygbag-frame" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+
+<!-- HUD -->
+<div id="hud">
+  <button class="hud-btn" id="fullscreenBtn">⛶ Fullscreen</button>
+  <button class="hud-btn" id="exitBtn">✕ Exit</button>
+</div>
+
+<!-- Guest banner -->
+<div id="guest-banner">
+  ℹ️ Playing as guest – score won't be saved.
+  <a href="#" onclick="exitGame(); return false;">Login via dashboard</a>
+</div>
+
+<script>
+// ── 1. Pull JWT from parent SPA or own localStorage ──────────────────────────
+var token = null;
+try {
+  token = (window.parent && window.parent !== window)
+    ? window.parent.localStorage.getItem('access_token')
+    : localStorage.getItem('access_token');
+} catch(e) {}
+
+if (token && token !== 'null') {
+  // Store in localStorage so the same-origin iframe can read it
+  localStorage.setItem('SI3LN_JWT_TOKEN', token);
+  localStorage.setItem('SI3LN_API_URL', window.location.origin);
+} else {
+  localStorage.removeItem('SI3LN_JWT_TOKEN');
+  document.getElementById('guest-banner').style.display = 'block';
+}
+
+// ── 2. Pass world/level/player params through to pygbag URL ──────────────────
+var params = new URLSearchParams(window.location.search);
+var pygbagParams = new URLSearchParams();
+['world','level','player'].forEach(function(k) {
+  if (params.get(k)) pygbagParams.set(k, params.get(k));
+});
+var pygbagSrc = '/pygbag/' + (pygbagParams.toString() ? '?' + pygbagParams : '');
+
+// ── 3. Load iframe ────────────────────────────────────────────────────────────
+var frame = document.getElementById('pygbag-frame');
+
+// Animate progress bar while waiting
+var pct = 10;
+var barInterval = setInterval(function() {
+  pct = Math.min(pct + 2, 90);
+  document.getElementById('bar').style.width = pct + '%';
+  if (pct >= 40) document.getElementById('status').textContent = 'Loading Python runtime…';
+  if (pct >= 70) document.getElementById('status').textContent = 'Starting game…';
+}, 400);
+
+frame.onload = function() {
+  clearInterval(barInterval);
+  document.getElementById('bar').style.width = '100%';
+  document.getElementById('status').textContent = 'Game ready!';
+  setTimeout(function() {
+    document.getElementById('overlay').classList.add('hidden');
+  }, 600);
+};
+frame.onerror = function() {
+  clearInterval(barInterval);
+  document.getElementById('status').textContent = 'Failed to load game. Is the builder container done?';
+};
+
+frame.src = pygbagSrc;
+
+// ── 4. HUD ────────────────────────────────────────────────────────────────────
+function exitGame() {
+  try {
+    if (window.parent && window.parent.app) {
+      window.parent.app.navigateTo('games');
+    } else {
+      window.history.back();
+    }
+  } catch(e) { window.history.back(); }
+}
+
+document.getElementById('fullscreenBtn').addEventListener('click', function() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+    this.textContent = '⊡ Exit Fullscreen';
+  } else {
+    document.exitFullscreen();
+    this.textContent = '⛶ Fullscreen';
+  }
+});
+document.getElementById('exitBtn').addEventListener('click', exitGame);
+document.addEventListener('fullscreenchange', function() {
+  var btn = document.getElementById('fullscreenBtn');
+  if (btn) btn.textContent = document.fullscreenElement ? '⊡ Exit Fullscreen' : '⛶ Fullscreen';
+});
+</script>
+</body>
+</html>

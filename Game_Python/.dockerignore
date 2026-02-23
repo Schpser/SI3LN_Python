@@ -1,0 +1,16 @@
+# Old PyInstaller artifacts
+build/
+dist/
+build_game.spec
+*.spec
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Local game data (auth tokens, local scores)
+data/
+
+# Docs
+*.md

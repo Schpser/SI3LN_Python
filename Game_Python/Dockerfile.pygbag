@@ -1,0 +1,62 @@
+# ─── Pygbag Game Builder ─────────────────────────────────────────────────────
+# Compiles the Python/Pygame game to a browser-runnable package.
+# Output → /output (mounted as Docker volume pygbag_output, served at /pygbag/)
+#
+# Usage:
+#   docker compose --profile game up game-builder
+
+FROM python:3.10-slim
+
+RUN apt-get update && apt-get install -y \
+        wget zip curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir pygbag pygame-ce requests
+
+WORKDIR /game
+COPY . .
+
+# Build game (errors are mostly warnings, so we keep going)
+RUN pygbag --build main.py || true
+
+RUN mkdir -p /output
+
+CMD ["sh", "-c", "\
+    if [ -d /game/build/web ]; then \
+        cp -r /game/build/web/. /output/; \
+    elif [ -d /game/build ]; then \
+        cp -r /game/build/. /output/; \
+    else \
+        echo 'ERROR: build output not found'; exit 1; \
+    fi && \
+    \
+    echo '--- patching index.html ---' && \
+    \
+    sed -i 's|https://pygame-web.github.io/archives/0.9/|/pygbag-cdn/|g' /output/index.html && \
+    \
+    python3 -c \"\
+import re, sys\n\
+with open('/output/index.html', 'r') as f:\n\
+    html = f.read()\n\
+token_script = '''<script>\n\
+(function(){\n\
+  var t = localStorage.getItem(\\\"SI3LN_JWT_TOKEN\\\");\n\
+  if (t) { window.SI3LN_JWT_TOKEN = t; }\n\
+  var u = localStorage.getItem(\\\"SI3LN_API_URL\\\");\n\
+  if (u) { window.SI3LN_API_URL = u; }\n\
+})();\n\
+</script>'''\n\
+html = re.sub(r'(<script[\\s>])', token_script + r'\\n\\1', html, count=1)\n\
+with open('/output/index.html', 'w') as f:\n\
+    f.write(html)\n\
+print('token injection done')\n\
+\" && \
+    \
+    echo '' && \
+    echo '==========================================' && \
+    echo '  Pygbag build done!' && \
+    echo '  Restart frontend:' && \
+    echo '  docker compose -f Docker/docker-compose.yml restart frontend' && \
+    echo '  Then open: http://localhost/game/' && \
+    echo '=========================================='\
+"]

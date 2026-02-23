@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">SI3LN Game Administration</a></h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* Fix for multiple theme toggles appearing */
+    #theme-toggle-dropdown {
+        display: none !important;
+    }
+    
+    /* Keep only the main theme button */
+    button[data-theme-toggle] ~ div {
+        display: none !important;
+    }
+    
+    /* Ensure clean header */
+    #header {
+        background: #417690;
+        color: #fff;
+    }
+    
+    #branding h1 {
+        color: #f5dd5d;
+    }
+</style>
+
+<script>
+    // Remove duplicate theme toggles on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeToggles = document.querySelectorAll('[data-theme-toggle]');
+        if (themeToggles.length > 1) {
+            // Keep only the first one, remove the rest
+            for (let i = 1; i < themeToggles.length; i++) {
+                themeToggles[i].remove();
+            }
+        }
+        
+        // Remove duplicate dropdowns
+        const themeDropdowns = document.querySelectorAll('[id^="theme-toggle"]');
+        if (themeDropdowns.length > 1) {
+            for (let i = 1; i < themeDropdowns.length; i++) {
+                themeDropdowns[i].remove();
+            }
+        }
+    });
+</script>
+{% endblock %}

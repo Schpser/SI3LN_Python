@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Chakra+Petch:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>ARCAD3X Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/modules/profile.css">
+    <link rel="stylesheet" href="css/modules/games.css">
+    <link rel="stylesheet" href="css/modules/auth.css">
+    <link rel="stylesheet" href="css/modules/help.css">
+    <link rel="stylesheet" href="css/language-switcher.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/mobile.css">
+</head>
+<body>
+    <!-- Menu latéral gauche avec triangle PLAY -->
+    <nav class="side-menu" id="sideMenu">
+        <!-- Triangle PLAY pour dérouler -->
+        <div class="menu-trigger" id="menuTrigger">
+            <span class="play-triangle">▶</span>
+        </div>
+        
+        <!-- Menu déroulant (caché par défaut) -->
+        <div class="menu-dropdown" id="menuDropdown">
+            <div class="menu-header">
+                <div class="menu-logo">ARCAD3X</div>
+            </div>
+            
+            <ul class="menu-list">
+                <!-- Profil + miniature -->
+                <li class="menu-item player-only" data-page="profile">
+                    <span class="menu-icon">👤</span>
+                    <span class="menu-label">Profil</span>
+                    <span class="menu-thumbnail" id="profileThumb">
+                        <!-- Miniature avatar ici -->
+                    </span>
+                </li>
+                
+                <!-- Games + logo manette -->
+                <li class="menu-item" data-page="games">
+                    <span class="menu-icon">🎮</span>
+                    <span class="menu-label">Games</span>
+                </li>
+                
+                <!-- Help + point d'interrogation -->
+                <li class="menu-item" data-page="help">
+                    <span class="menu-icon">❓</span>
+                    <span class="menu-label">Help</span>
+                </li>
+                
+                <!-- Settings admin (visible seulement si admin) -->
+                <li class="menu-item admin-only hidden" data-page="settings">
+                    <span class="menu-icon">⚙️</span>
+                    <span class="menu-label">Settings</span>
+                </li>
+                
+                <!-- Séparateur -->
+                <li class="menu-divider"></li>
+                
+                <!-- About us en bas -->
+                <li class="menu-item about-item" data-page="about">
+                    <span class="menu-icon">ℹ️</span>
+                    <span class="menu-label">About us</span>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenu principal -->
+    <main class="main-content">
+        <!-- Barre de recherche en haut -->
+        <div class="top-bar">
+            <div class="search-container">
+                <input type="text" class="search-input" data-i18n-placeholder="topBar.search" placeholder="Search...">
+                <button class="search-button">🔍</button>
+            </div>
+            
+            <!-- Language Switcher -->
+            <div class="language-switcher" id="languageSwitcher">
+                <button class="language-btn" id="languageBtn">
+                    <span class="language-icon">🌐</span>
+                    <span class="language-code" id="currentLanguage">EN</span>
+                </button>
+                <div class="language-dropdown hidden" id="languageDropdown">
+                    <button class="language-option" data-lang="en">
+                        <span class="flag">🇬🇧</span>
+                        <span>English</span>
+                    </button>
+                    <button class="language-option" data-lang="fr">
+                        <span class="flag">🇫🇷</span>
+                        <span>Français</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Simple login link (for non-logged users) -->
+            <div class="top-bar-auth guest-only" id="topBarAuth">
+                <a href="#" class="auth-link" id="topLoginLink" data-i18n="topBar.loginSignup">🔐 Login / Sign Up</a>
+            </div>
+
+            <!-- Infos user connecté (caché par défaut) -->
+            <div class="user-info hidden" id="userInfo">
+                <span id="userName"></span>
+                <button class="logout-btn" id="logoutBtn" data-i18n="topBar.logout">Logout</button>
+            </div>
+        </div>
+
+        <!-- Conteneur des pages -->
+        <div id="page-container">
+            <!-- Page d'accueil avec welcome et cartes -->
+            <div id="home-page" class="page">
+                <div class="container">
+                    <!-- Page Header with logo -->
+                    <div class="page-header">
+                        <a href="#" class="page-logo" data-page="home">ARCAD3X</a>
+                    </div>
+                    
+                    <header>
+                        <h1>🚀 <span data-i18n="home.welcome">Welcome in</span> <span id="site-name">ARCAD3X</span></h1>
+                        <p data-i18n="home.subtitle">Fullstack gaming platform</p>
+                    </header>
+                    
+                    <section class="dashboard">
+                        <!-- Carte 1 - Jeu SI3LN -->
+                        <div class="card game-card" id="gameCard">
+                            <h2>🎮 SI3LN</h2>
+                            <p data-i18n="home.launchAdventure">Launch the adventure</p>
+                            <a href="#" class="game-link" id="playGameLink" data-i18n="home.playNow">Play now →</a>
+                        </div>
+                        
+                        <!-- Carte 2 - Leaderboard -->
+                        <div class="card">
+                            <h2 data-i18n="home.leaderboard">🏆 Leaderboard</h2>
+                            <div id="leaderboard" data-i18n="home.loading">Loading...</div>
+                        </div>
+                        
+                        <!-- Carte 3 - Player Profile -->
+                        <div class="card">
+                            <h2 data-i18n="home.playerProfile">👤 Player Profile</h2>
+                            <div id="profile">Please log in</div>
+                        </div>
+                    </section>
+                    
+                    <footer>
+                        <p>Tous droits réservés Hugex & Schps... © 2026</p>
+                    </footer>
+                </div>
+            </div>
+
+            <!-- Page Login -->
+            <div id="login-page" class="page hidden">
+                <div class="container">
+                    <div class="auth-container">
+                        <h1 class="page-title" data-i18n="login.title">🔐 Login to ARCAD3X</h1>
+                        
+                        <form id="loginForm" class="auth-form">
+                            <!-- Username -->
+                            <div class="form-group">
+                                <label for="loginUsername">
+                                    <span class="label-icon">👤</span>
+                                    <span data-i18n="login.username">Username</span>
+                                </label>
+                                <input type="text" id="loginUsername" class="form-input" 
+                                    data-i18n-placeholder="login.usernamePlaceholder" placeholder="Your username" required>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="form-group">
+                                <label for="loginPassword">
+                                    <span class="label-icon">🔒</span>
+                                    <span data-i18n="login.password">Password</span>
+                                </label>
+                                <input type="password" id="loginPassword" class="form-input" 
+                                    data-i18n-placeholder="login.passwordPlaceholder" placeholder="********" required>
+                            </div>
+
+                            <!-- Remember me -->
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="rememberMe">
+                                <label for="rememberMe" data-i18n="login.rememberMe">Remember me</label>
+                            </div>
+
+                            <!-- Login button -->
+                            <button type="submit" class="auth-submit-btn" id="loginSubmitBtn" data-i18n="login.loginButton">
+                                Login
+                            </button>
+
+                            <!-- Links -->
+                            <div class="auth-links">
+                                <a href="#" id="forgotPasswordLink" data-i18n="login.forgotPassword">Forgot password?</a>
+                                <span class="separator">•</span>
+                                <a href="#" id="signupLink" data-i18n="login.createAccount">Create an account</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Create Account -->
+            <div id="create-account-page" class="page hidden">
+                <div class="container">
+                    <div class="auth-container">
+                        <h1 class="page-title" data-i18n="signup.title">📝 Create an account</h1>
+                        
+                        <form id="signupForm" class="auth-form">
+                            <!-- Email -->
+                            <div class="form-group">
+                                <label for="signupEmail">
+                                    <span class="label-icon">📧</span>
+                                    <span data-i18n="signup.email">Email</span>
+                                </label>
+                                <input type="email" id="signupEmail" class="form-input" 
+                                    data-i18n-placeholder="signup.emailPlaceholder" placeholder="your@email.com" required>
+                            </div>
+
+                            <!-- Pseudo avec warning -->
+                            <div class="form-group">
+                                <label for="signupPseudo">
+                                    <span class="label-icon">👤</span>
+                                    <span data-i18n="signup.pseudo">Pseudo</span>
+                                </label>
+                                <input type="text" id="signupPseudo" class="form-input" 
+                                    data-i18n-placeholder="signup.pseudoPlaceholder" placeholder="Choose your username" required 
+                                    maxlength="30" pattern="[A-Za-z0-9_]+" 
+                                    title="Only letters, numbers and underscore">
+                                <div class="warning-message" id="pseudoWarning" data-i18n="signup.pseudoWarning">
+                                    ⚠️ This username cannot be changed later (only admins can modify it)
+                                </div>
+                                <div class="validation-message" id="pseudoValidation">
+                                    <!-- Messages de validation dynamiques -->
+                                </div>
+                            </div>
+
+                            <!-- Mot de passe -->
+                            <div class="form-group">
+                                <label for="signupPassword">
+                                    <span class="label-icon">🔒</span>
+                                    <span data-i18n="signup.password">Password</span>
+                                </label>
+                                <input type="password" id="signupPassword" class="form-input" 
+                                    data-i18n-placeholder="signup.passwordPlaceholder" placeholder="********" required minlength="8">
+                                <div class="password-requirements">
+                                    <span class="req-item" id="reqLength" data-i18n="signup.reqLength">✗ 8 characters min</span>
+                                    <span class="req-item" id="reqNumber" data-i18n="signup.reqNumber">✗ At least 1 number</span>
+                                    <span class="req-item" id="reqUpper" data-i18n="signup.reqUpper">✗ At least 1 uppercase</span>
+                                </div>
+                            </div>
+
+                            <!-- Confirmation mot de passe -->
+                            <div class="form-group">
+                                <label for="signupConfirmPassword">
+                                    <span class="label-icon">✓</span>
+                                    <span data-i18n="signup.confirmPassword">Confirm password</span>
+                                </label>
+                                <input type="password" id="signupConfirmPassword" class="form-input" 
+                                    data-i18n-placeholder="signup.passwordPlaceholder" placeholder="********" required>
+                                <div class="validation-message" id="passwordMatch"></div>
+                            </div>
+
+                            <!-- Langue préférée -->
+                            <div class="form-group">
+                                <label for="preferredLanguage">
+                                    <span class="label-icon">🌐</span>
+                                    <span data-i18n="signup.preferredLanguage">Preferred Language</span>
+                                </label>
+                                <select id="preferredLanguage" class="form-select">
+                                    <option value="fr">🇫🇷 Français</option>
+                                    <option value="en" selected>🇬🇧 English</option>
+                                    <option value="es">🇪🇸 Español</option>
+                                    <option value="de">🇩🇪 Deutsch</option>
+                                    <option value="it">🇮🇹 Italiano</option>
+                                    <option value="pt">🇵🇹 Português</option>
+                                    <option value="nl">🇳🇱 Nederlands</option>
+                                    <option value="pl">🇵🇱 Polski</option>
+                                    <option value="ru">🇷🇺 Русский</option>
+                                    <option value="ja">🇯🇵 日本語</option>
+                                    <option value="ko">🇰🇷 한국어</option>
+                                    <option value="zh">🇨🇳 中文</option>
+                                </select>
+                            </div>
+
+                            <!-- Checkbox conditions -->
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="acceptTerms" required>
+                                <label for="acceptTerms">
+                                    <span data-i18n="signup.acceptTerms">I accept the</span> <a href="#" id="termsLink" data-i18n="signup.termsOfService">terms of service</a>
+                                </label>
+                            </div>
+
+                            <!-- Validation des gros mots (caché) -->
+                            <div id="profanityCheck" class="hidden"></div>
+
+                            <!-- Bouton submit -->
+                            <button type="submit" class="auth-submit-btn" id="signupSubmit" data-i18n="signup.createButton" disabled>
+                                Create my account
+                            </button>
+
+                            <!-- Lien vers login -->
+                            <p class="auth-redirect">
+                                <span data-i18n="signup.alreadyHaveAccount">Already have an account?</span> 
+                                <a href="#" id="loginRedirect" data-i18n="signup.loginLink">Login here</a>
+                            </p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Autres pages (cachées par défaut) -->
+            <div id="profile-page" class="page hidden">
+                <!-- Page Header with logo -->
+                <div class="page-header">
+                    <a href="#" class="page-logo" data-page="home">ARCAD3X</a>
+                </div>
+                
+                <div class="profile-container">
+                    <!-- En-tête du profil avec photo et pseudo -->
+                    <div class="profile-header">
+                        <div class="profile-header-left">
+                            <div class="profile-avatar-container">
+                                <img src="assets/players/default-avatar.png" alt="Avatar" class="profile-avatar-large" id="profileAvatarLarge">
+                            </div>
+                            <div class="profile-name-section">
+                                <h2 id="profileDisplayName">Pseudo du joueur</h2>
+                                <span class="profile-username">@<span id="profileUsername">username</span></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Bouton modifier à droite -->
+                        <button class="edit-profile-btn" id="editProfileBtn">
+                            <span class="edit-icon">✎</span>
+                            <span class="edit-text">Edit profile</span>
+                        </button>
+                    </div>
+
+                    <!-- Contenu principal du profil -->
+                    <div class="profile-main">
+                        <!-- Colonne de gauche : meilleurs scores + stats -->
+                        <div class="profile-left-column">
+                            <!-- Stats globales (total score, parties, niveau...) -->
+                            <div class="profile-section stats-section">
+                                <h3>📊 Statistics</h3>
+                                <div class="stats-grid" id="profileStats">
+                                    <!-- Rempli par JS -->
+                                    <div class="stat-item loading">Loading stats...</div>
+                                </div>
+                            </div>
+                            <div class="profile-section scores-section">
+                                <h3>🏆 Best Scores</h3>
+                                <div class="scores-list" id="bestScoresList">
+                                    <!-- Rempli par JS -->
+                                    <div class="score-item loading">Loading scores...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne du milieu : description libre -->
+                        <div class="profile-middle-column">
+                            <div class="profile-section bio-section">
+                                <h3>📝 About me</h3>
+                                <div class="bio-content" id="userBio">
+                                    <!-- Rempli par JS -->
+                                    <p class="bio-placeholder">No description yet...</p>
+                                </div>
+                            </div>
+
+                            <!-- Section Favoris (en dessous) -->
+                            <div class="profile-section favorites-section">
+                                <h3>⭐ Favorite Games</h3>
+                                <div class="favorites-grid" id="favoritesGrid">
+                                    <!-- Rempli par JS -->
+                                    <div class="favorite-item loading">Loading favorites...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div id="help-page" class="page hidden">
+                <div class="container">
+                    <!-- Page Header with logo -->
+                    <div class="page-header">
+                        <a href="#" class="page-logo" data-page="home">ARCAD3X</a>
+                    </div>
+                    
+                    <h1 class="page-title">❓ Help & Support</h1>
+                    
+                    <div class="help-content">
+                        <!-- Games Tutorials -->
+                        <div class="help-section">
+                            <div class="help-card" id="gamesTutorials">
+                                <div class="help-icon">🎮</div>
+                                <h2>Games Tutorials</h2>
+                                <p>Learn how to play and master our games</p>
+                                <button class="help-btn" data-help="games">View Tutorials</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Player Reports -->
+                        <div class="help-section">
+                            <div class="help-card" id="playerReports">
+                                <div class="help-icon">⚠️</div>
+                                <h2>Report Player</h2>
+                                <p>Report offensive usernames, descriptions, or behavior</p>
+                                <button class="help-btn" data-help="report">Submit Report</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Bug Reports -->
+                        <div class="help-section">
+                            <div class="help-card" id="bugReports">
+                                <div class="help-icon">🐛</div>
+                                <h2>Report Bug</h2>
+                                <p>Found a bug? Help us improve the platform</p>
+                                <button class="help-btn" data-help="bug">Report Bug</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Support Project -->
+                        <div class="help-section">
+                            <div class="help-card" id="supportProject">
+                                <div class="help-icon">💝</div>
+                                <h2>Support Us</h2>
+                                <p>Support the development of ARCAD3X</p>
+                                <button class="help-btn" data-help="support">Support Project</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Help Detail Panel (hidden by default) -->
+                    <div class="help-detail-panel hidden" id="helpDetailPanel">
+                        <button class="help-back-btn" id="helpBackBtn">← Back to Help Menu</button>
+                        <div id="helpDetailContent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-page" class="page hidden">
+                <div class="container">
+                    <h1 class="page-title">⚙️ Settings</h1>
+                    <div id="settingsContent"></div>
+                </div>
+            </div>
+
+            <div id="about-page" class="page hidden">
+                <div class="container">
+                    <h1 class="page-title">ℹ️ About us</h1>
+                    <div id="aboutContent"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal d'édition du profil (cachée par défaut) -->
+    <div id="editProfileModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="profile.editProfile">Edit Profile</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Changer fond d'écran -->
+                <div class="edit-section">
+                    <h3 data-i18n="profile.backgroundColor">🎨 Background Color</h3>
+                    <div class="color-picker">
+                        <button class="color-option" data-color="#000000" style="background: #000000;"></button>
+                        <button class="color-option" data-color="#1a1a1a" style="background: #1a1a1a;"></button>
+                        <button class="color-option" data-color="#2d2d2d" style="background: #2d2d2d;"></button>
+                        <button class="color-option" data-color="#404040" style="background: #404040;"></button>
+                        <button class="color-option" data-color="#0a0a2a" style="background: #0a0a2a;"></button>
+                        <button class="color-option" data-color="#2a0a0a" style="background: #2a0a0a;"></button>
+                    </div>
+                </div>
+
+                <!-- Changer photo de profil -->
+                <div class="edit-section">
+                    <h3 data-i18n="profile.profilePicture">📸 Profile Picture (max 5MB)</h3>
+                    <div class="avatar-upload">
+                        <input type="file" id="avatarUpload" accept="image/*">
+                        <label for="avatarUpload" class="upload-btn" data-i18n="profile.chooseImage">Choose Image</label>
+                        <span class="upload-hint" data-i18n="profile.imageHint">PNG, JPG, GIF up to 5MB</span>
+                    </div>
+                </div>
+
+                <!-- Modifier description -->
+                <div class="edit-section">
+                    <h3 data-i18n="profile.bio">📝 Bio</h3>
+                    <textarea id="editBio" maxlength="500" rows="4" data-i18n-placeholder="profile.bioPlaceholder" placeholder="Tell us about yourself..."></textarea>
+                    <div class="char-counter">
+                        <span id="bioCharCount">0</span>/500
+                    </div>
+                </div>
+
+                <!-- Afficher/cacher les scores -->
+                <div class="edit-section">
+                    <h3 data-i18n="profile.privacy">🔒 Privacy</h3>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showScoresToggle" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label" data-i18n="profile.showScores">Show my scores on profile</span>
+                    </label>
+                </div>
+
+                <!-- Jeux favoris -->
+                <div class="edit-section">
+                    <h3>⭐ Favorite Games</h3>
+                    <div class="favorites-edit">
+                        <select id="favoriteGameSelect" multiple>
+                            <option value="si3ln">SI3LN</option>
+                            <option value="game2">Game 2</option>
+                            <option value="game3">Game 3</option>
+                        </select>
+                        <p class="hint">Hold Ctrl/Cmd to select multiple</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn">Cancel</button>
+                <button class="modal-btn save-btn" id="saveProfileBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates pour les données dynamiques -->
+    <template id="profile-template">
+        <div class="profile-card">
+            <div class="profile-avatar">
+                <img src="assets/players/player_1/AnimateDiff_00001.001.png" alt="Avatar" id="profileAvatar">
+            </div>
+            <div class="profile-info">
+                <h2 id="profileUsername">Chargement...</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Niveau</span>
+                        <span class="stat-value" id="profileLevel">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Score</span>
+                        <span class="stat-value" id="profileScore">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Parties</span>
+                        <span class="stat-value" id="profileGames">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+        <!-- Page Games -->
+    <div id="games-page" class="page hidden">
+        <div class="container">
+            <h1 class="page-title">🎮 Games</h1>
+            
+            <div class="games-grid" id="gamesGrid">
+                <!-- Carte SI3LN (jeu principal) -->
+                <div class="game-card-large" id="si3lnGameCard">
+                    <div class="game-card-image">
+                        <img src="assets/worlds/home_page.png" alt="SI3LN">
+                        <div class="game-overlay">
+                            <span class="play-now">▶ PLAY NOW</span>
+                        </div>
+                    </div>
+                    <div class="game-card-info">
+                        <h3>SI3LN</h3>
+                        <p>Space Invaders III Last Night</p>
+                        <!-- Stats will be populated from DB later -->
+                    </div>
+                </div>
+
+                <!-- Cartes Coming Soon -->
+                <div class="game-card coming-soon">
+                    <div class="coming-soon-content">
+                        <span class="coming-soon-icon">🎮</span>
+                        <h4>Coming Soon...</h4>
+                    </div>
+                </div>
+
+                <div class="game-card coming-soon">
+                    <div class="coming-soon-content">
+                        <span class="coming-soon-icon">🎮</span>
+                        <h4>Coming Soon...</h4>
+                    </div>
+                </div>
+
+                <div class="game-card coming-soon">
+                    <div class="coming-soon-content">
+                        <span class="coming-soon-icon">🎮</span>
+                        <h4>Coming Soon...</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page de jeu (plein écran) -->
+    <div id="game-play-page" class="page hidden fullscreen-page">
+        <!-- Game controls bar -->
+        <div class="game-controls-bar">
+            <button class="game-control-btn" id="exitGameBtn">
+                <span class="control-icon">⬅</span>
+                <span class="control-text">Exit Game</span>
+            </button>
+            
+            <div class="game-title-display">
+                <span class="game-icon">🎮</span>
+                <span class="game-name" id="currentGameName">SI3LN</span>
+            </div>
+            
+            <button class="game-control-btn" id="fullscreenBtn">
+                <span class="control-icon">⛶</span>
+                <span class="control-text">Fullscreen</span>
+            </button>
+        </div>
+        
+        <!-- Guest info banner -->
+        <div class="guest-info-banner guest-only" id="guestInfo" style="display: none;">
+            <span class="info-icon">ℹ️</span>
+            <span>Playing as guest - Your score won't be saved. <a href="#" onclick="window.app.navigateTo('login'); return false;">Login</a> to save your progress!</span>
+        </div>
+        
+        <!-- Navigation du jeu -->
+        <div class="game-navigation">
+            <button class="game-nav-btn" id="prevGameBtn">
+                <span class="nav-arrow">◀</span>
+                <span class="nav-text">Previous</span>
+            </button>
+            
+            <button class="game-nav-btn" id="nextGameBtn">
+                <span class="nav-text">Next</span>
+                <span class="nav-arrow">▶</span>
+            </button>
+        </div>
+
+        <!-- Conteneur du jeu -->
+        <div class="game-fullscreen-container">
+            <iframe id="gameFrame" class="game-iframe"
+                    allow="cross-origin-isolated" 
+                    title="SI3LN Game"
+                    allowfullscreen>
+            </iframe>
+            
+            <!-- Overlay de chargement -->
+            <div class="game-loading" id="gameLoading">
+                <div class="loading-spinner"></div>
+                <p>Loading game...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- i18n (must load first) -->
+    <script src="js/i18n.js"></script>
+    
+    <!-- API Client -->
+    <script src="api.js"></script>
+    
+    <!-- Modules -->
+    <script src="js/modules/profile.js"></script>
+    <script src="js/modules/games.js"></script>
+    <script src="js/modules/auth.js"></script>
+    <script src="js/modules/help.js"></script>
+    <script src="js/modules/mobile.js"></script>
+    
+    <!-- Main App -->
+    <!-- Option 1: Use refactored version (recommended) -->
+    <script src="js/app-refactored.js"></script>
+    <!-- Option 2: Use original version (comment above and uncomment below) -->
+    <!-- <script src="js/app.js"></script> -->
+</body>
+</html>
