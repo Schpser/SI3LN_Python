@@ -1,0 +1,144 @@
+/* language-switcher.css - Language switcher styles */
+
+/* ===== LANGUAGE SWITCHER ===== */
+.language-switcher {
+    position: relative;
+    margin-right: 15px;
+}
+
+.language-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-family: 'Chakra Petch', sans-serif;
+}
+
+.language-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.language-icon {
+    font-size: 18px;
+}
+
+.language-code {
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.language-dropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 5px;
+    min-width: 150px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.language-dropdown.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.language-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 14px;
+    text-align: left;
+}
+
+.language-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+}
+
+.language-option.active {
+    background: rgba(0, 255, 255, 0.1);
+    border-left: 3px solid #00ffff;
+}
+
+.language-option .flag {
+    font-size: 20px;
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .language-switcher {
+        margin-right: 10px;
+    }
+    
+    .language-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    .language-icon {
+        font-size: 16px;
+    }
+    
+    .language-dropdown {
+        min-width: 130px;
+    }
+    
+    .language-option {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Hide language code text on very small screens, show only icon */
+    .language-code {
+        display: none;
+    }
+    
+    .language-btn {
+        padding: 8px;
+    }
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes languageChange {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.language-btn.changing {
+    animation: languageChange 0.3s ease;
+}

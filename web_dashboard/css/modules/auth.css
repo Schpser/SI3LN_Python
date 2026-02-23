@@ -1,0 +1,233 @@
+/* auth.css - Authentication-specific styles */
+
+/* Auth Container */
+.auth-container {
+    max-width: 500px;
+    margin: 50px auto;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--menu-border);
+    border-radius: 15px;
+    padding: 40px;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Form Groups */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-family: var(--font-gamer);
+    color: #ffffff;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.label-icon {
+    font-size: 1.2rem;
+}
+
+/* Form Inputs */
+.form-input,
+.form-select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--menu-border);
+    border-radius: 8px;
+    padding: 12px 15px;
+    color: #ffffff;
+    font-family: var(--font-gamer-alt);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.form-input.valid {
+    border-color: #44ff44;
+}
+
+.form-input.invalid {
+    border-color: #ff4444;
+}
+
+/* Warning/Validation Messages */
+.warning-message {
+    background: rgba(255, 165, 0, 0.1);
+    border-left: 3px solid orange;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: orange;
+}
+
+.validation-message {
+    font-size: 0.85rem;
+    padding: 5px 0;
+    font-family: var(--font-gamer-alt);
+}
+
+/* Password Requirements */
+.password-requirements {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.req-item {
+    color: #ff4444;
+    transition: color 0.3s ease;
+}
+
+.req-item.valid {
+    color: #44ff44;
+}
+
+.req-item.invalid {
+    color: #ff4444;
+}
+
+/* Checkbox Group */
+.checkbox-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.checkbox-group label {
+    margin: 0;
+    color: #ccc;
+    font-family: var(--font-gamer-alt);
+}
+
+.checkbox-group a {
+    color: #4da6ff;
+    text-decoration: none;
+}
+
+.checkbox-group a:hover {
+    text-decoration: underline;
+}
+
+/* Submit Button */
+.auth-submit-btn {
+    background: var(--button-gradient);
+    border: none;
+    padding: 15px 30px;
+    border-radius: 8px;
+    color: #ffffff;
+    font-family: var(--font-gamer);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(255, 255, 255, 0.3);
+}
+
+.auth-submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Auth Redirect */
+.auth-redirect {
+    text-align: center;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.auth-redirect a {
+    color: #4da6ff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.auth-redirect a:hover {
+    text-decoration: underline;
+}
+
+/* Auth Links (for login page) */
+.auth-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+    font-size: 0.9rem;
+}
+
+.auth-links a {
+    color: #4da6ff;
+    text-decoration: none;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+.auth-links .separator {
+    color: #666;
+}
+
+/* Top Bar Auth Link */
+.top-bar-auth {
+    display: flex;
+    align-items: center;
+}
+
+.auth-link {
+    font-family: var(--font-gamer);
+    color: #ffffff;
+    text-decoration: none;
+    padding: 10px 20px;
+    background: var(--button-gradient);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.auth-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .auth-container {
+        margin: 20px;
+        padding: 25px;
+    }
+    
+    .auth-link {
+        font-size: 0.8rem;
+        padding: 8px 15px;
+    }
+}

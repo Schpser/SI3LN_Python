@@ -1,0 +1,262 @@
+/* mobile.css - Mobile-specific styles and touch feedback */
+
+/* ===== MOBILE BODY CLASS ===== */
+body.mobile-device {
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);
+    -webkit-touch-callout: none;
+}
+
+/* ===== TOUCH FEEDBACK ===== */
+.touch-active {
+    opacity: 0.7;
+    transform: scale(0.98);
+    transition: all 0.1s ease;
+}
+
+/* Prevent text selection on touch */
+.mobile-device button,
+.mobile-device .menu-item,
+.mobile-device .card,
+.mobile-device .help-btn {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* ===== MOBILE MENU IMPROVEMENTS ===== */
+.mobile-device .menu-dropdown {
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Larger touch targets for mobile */
+.mobile-device .menu-item {
+    min-height: 48px;
+    padding: 15px;
+}
+
+.mobile-device .menu-trigger {
+    min-height: 60px;
+    min-width: 50px;
+}
+
+/* ===== MOBILE CARDS ===== */
+.mobile-device .card {
+    margin-bottom: 10px;
+    border-width: 2px; /* Easier to see on mobile */
+}
+
+/* ===== MOBILE BUTTONS ===== */
+.mobile-device button,
+.mobile-device .help-btn,
+.mobile-device .game-control-btn {
+    min-height: 44px; /* iOS recommended touch target */
+    padding: 12px 20px;
+    font-size: 16px; /* Prevents zoom on iOS */
+}
+
+/* ===== MOBILE INPUTS ===== */
+.mobile-device input,
+.mobile-device textarea,
+.mobile-device select {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
+}
+
+/* ===== MOBILE GAME PAGE ===== */
+.mobile-device .game-fullscreen-container {
+    touch-action: none; /* Allow game to handle all touch events */
+}
+
+.mobile-device .game-iframe {
+    border: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ===== SWIPE INDICATOR ===== */
+.swipe-indicator {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    width: 5px;
+    height: 100px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.3), transparent);
+    transform: translateY(-50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 999;
+}
+
+.swipe-indicator.visible {
+    opacity: 1;
+}
+
+/* ===== PULL TO REFRESH INDICATOR ===== */
+.pull-refresh-indicator {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100%);
+    padding: 10px 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 0 0 10px 10px;
+    color: white;
+    font-size: 14px;
+    transition: transform 0.3s ease;
+    z-index: 9999;
+}
+
+.pull-refresh-indicator.visible {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ===== MOBILE LOADING STATES ===== */
+.mobile-device .loading-spinner {
+    width: 40px;
+    height: 40px;
+}
+
+/* ===== MOBILE MODAL ===== */
+.mobile-device .modal-content {
+    width: 95vw;
+    max-width: 95vw;
+    max-height: 90vh;
+    margin: 20px auto;
+}
+
+.mobile-device .modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ===== MOBILE PROFILE ===== */
+.mobile-device .profile-header {
+    padding: 15px;
+}
+
+.mobile-device .profile-avatar-large {
+    width: 80px;
+    height: 80px;
+}
+
+/* ===== MOBILE HELP PAGE ===== */
+.mobile-device .help-card {
+    transition: none; /* Disable hover effects */
+}
+
+.mobile-device .help-icon {
+    font-size: 3rem;
+}
+
+/* ===== MOBILE NAVIGATION ===== */
+.mobile-device .top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+.mobile-device .main-content {
+    padding-top: 70px; /* Account for fixed top bar */
+}
+
+/* ===== MOBILE LANDSCAPE MODE ===== */
+.mobile-device.landscape .menu-dropdown {
+    width: 200px;
+}
+
+.mobile-device.landscape .top-bar {
+    padding: 5px 10px;
+}
+
+.mobile-device.landscape header {
+    padding: 20px 0;
+}
+
+.mobile-device.landscape header h1 {
+    font-size: 1.5rem !important;
+}
+
+/* ===== SCROLL BEHAVIOR ===== */
+.mobile-device {
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Smooth scrolling for mobile */
+.mobile-device .container,
+.mobile-device .page {
+    scroll-behavior: smooth;
+}
+
+/* ===== ORIENTATION SPECIFIC ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+    .mobile-device .menu-dropdown {
+        height: 100vh;
+        overflow-y: auto;
+    }
+    
+    .mobile-device .game-controls-bar {
+        height: 40px;
+    }
+}
+
+/* ===== SAFE AREA FOR NOTCHED DEVICES ===== */
+@supports (padding: env(safe-area-inset-top)) {
+    .mobile-device .top-bar {
+        padding-top: calc(10px + env(safe-area-inset-top));
+    }
+    
+    .mobile-device .game-controls-bar {
+        padding-top: env(safe-area-inset-top);
+    }
+    
+    .mobile-device .menu-dropdown {
+        padding-left: calc(15px + env(safe-area-inset-left));
+    }
+    
+    .mobile-device .game-navigation {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* ===== ACCESSIBILITY - FOCUS STATES ===== */
+.mobile-device button:focus,
+.mobile-device a:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+}
+
+/* ===== PREVENT OVERSCROLL ===== */
+.mobile-device body {
+    overscroll-behavior-y: contain;
+}
+
+.mobile-device .page {
+    overscroll-behavior: contain;
+}
+
+/* ===== MOBILE GAME FULLSCREEN ===== */
+.mobile-device #game-play-page {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+/* Hide address bar on scroll for mobile */
+.mobile-device.hide-chrome {
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ===== ANIMATIONS FOR MOBILE ===== */
+@media (prefers-reduced-motion: reduce) {
+    .mobile-device * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

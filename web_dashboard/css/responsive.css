@@ -1,0 +1,395 @@
+/* responsive.css - Responsive design for all screen sizes */
+
+/* ===== MOBILE FIRST - BASE ADJUSTMENTS ===== */
+@media (max-width: 480px) {
+    /* Typography scaling */
+    :root {
+        font-size: 14px;
+    }
+    
+    /* Container */
+    .container {
+        padding: 10px;
+    }
+    
+    /* Header */
+    header h1 {
+        font-size: 1.5rem !important;
+        letter-spacing: 1px;
+    }
+    
+    header p {
+        font-size: 0.8rem !important;
+        letter-spacing: 1px;
+    }
+    
+    /* Page Header Logo */
+    .page-header {
+        padding: 10px 0;
+    }
+    
+    .page-logo {
+        font-size: 1.3rem !important;
+    }
+    
+    /* Page Titles */
+    .page-title {
+        font-size: 1.5rem !important;
+    }
+    
+    /* Dashboard Cards */
+    .dashboard {
+        grid-template-columns: 1fr !important;
+        gap: 15px;
+        padding: 10px 0;
+    }
+    
+    .card {
+        padding: 15px;
+    }
+    
+    .card h2 {
+        font-size: 1.2rem;
+    }
+    
+    /* Top Bar */
+    .top-bar {
+        padding: 10px 15px;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .search-container {
+        width: 100%;
+    }
+    
+    .search-input {
+        width: 100%;
+        font-size: 14px;
+    }
+    
+    /* User Info / Auth */
+    .user-info,
+    .top-bar-auth {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Sidebar Menu */
+    .menu-dropdown {
+        width: 240px;
+    }
+    
+    .menu-logo {
+        font-size: 18px;
+    }
+    
+    .menu-item {
+        padding: 12px;
+    }
+    
+    .menu-label {
+        font-size: 14px;
+    }
+    
+    /* Profile Page */
+    .profile-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+    }
+    
+    .profile-header-left {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .profile-avatar-large {
+        width: 100px !important;
+        height: 100px !important;
+    }
+    
+    .profile-main {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Games Grid */
+    .games-grid {
+        grid-template-columns: 1fr !important;
+        gap: 15px;
+    }
+    
+    .game-card-large {
+        grid-column: span 1 !important;
+    }
+    
+    .game-card-image {
+        height: 200px !important;
+    }
+    
+    /* Game Play Page */
+    .game-controls-bar {
+        height: 50px;
+        padding: 0 10px;
+    }
+    
+    .game-control-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .control-text {
+        display: none;
+    }
+    
+    .game-title-display {
+        font-size: 1rem;
+    }
+    
+    .game-navigation {
+        bottom: 20px;
+        gap: 10px;
+    }
+    
+    .game-nav-btn {
+        padding: 8px 15px;
+        font-size: 0.8rem;
+    }
+    
+    .nav-text {
+        display: none;
+    }
+    
+    .guest-info-banner {
+        font-size: 0.75rem;
+        padding: 8px 15px;
+    }
+    
+    /* Help Page */
+    .help-content {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .help-card {
+        padding: 20px;
+    }
+    
+    .help-icon {
+        font-size: 2.5rem;
+    }
+    
+    .help-form {
+        padding: 15px;
+    }
+    
+    /* Auth Forms */
+    .auth-container {
+        padding: 20px;
+    }
+    
+    .form-input,
+    .form-select,
+    .form-textarea {
+        font-size: 14px;
+    }
+    
+    /* Modal */
+    .modal-content {
+        width: 95%;
+        margin: 10px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}
+
+/* ===== TABLET (481px - 768px) ===== */
+@media (min-width: 481px) and (max-width: 768px) {
+    /* Typography */
+    header h1 {
+        font-size: 2rem !important;
+    }
+    
+    header p {
+        font-size: 1rem !important;
+    }
+    
+    /* Dashboard */
+    .dashboard {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+    
+    /* Menu */
+    .menu-dropdown {
+        width: 260px;
+    }
+    
+    /* Games Grid */
+    .games-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .game-card-large {
+        grid-column: span 2;
+    }
+    
+    /* Help Content */
+    .help-content {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    /* Profile */
+    .profile-main {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== MEDIUM SCREENS (769px - 1024px) ===== */
+@media (min-width: 769px) and (max-width: 1024px) {
+    /* Container */
+    .container {
+        max-width: 900px;
+    }
+    
+    /* Dashboard */
+    .dashboard {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    /* Games */
+    .games-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .game-card-large {
+        grid-column: span 2;
+    }
+}
+
+/* ===== LARGE SCREENS (1025px - 1440px) ===== */
+@media (min-width: 1025px) and (max-width: 1440px) {
+    .container {
+        max-width: 1100px;
+    }
+}
+
+/* ===== EXTRA LARGE SCREENS (1441px+) ===== */
+@media (min-width: 1441px) {
+    .container {
+        max-width: 1400px;
+    }
+    
+    header h1 {
+        font-size: 3rem !important;
+    }
+    
+    .dashboard {
+        gap: 40px;
+    }
+}
+
+/* ===== LANDSCAPE MOBILE ===== */
+@media (max-height: 500px) and (orientation: landscape) {
+    .top-bar {
+        padding: 5px 15px;
+    }
+    
+    header {
+        padding: 20px 0;
+    }
+    
+    .menu-dropdown {
+        width: 200px;
+    }
+    
+    .game-controls-bar {
+        height: 40px;
+    }
+    
+    .game-navigation {
+        bottom: 10px;
+    }
+}
+
+/* ===== TOUCH DEVICE OPTIMIZATIONS ===== */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .menu-item,
+    .help-btn,
+    .game-control-btn,
+    .game-nav-btn,
+    button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Remove hover effects on touch devices */
+    .card:hover,
+    .menu-item:hover,
+    .help-card:hover,
+    .game-card-large:hover {
+        transform: none;
+    }
+    
+    /* Active states for touch */
+    .card:active,
+    .menu-item:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+    
+    button:active,
+    .help-btn:active,
+    .game-control-btn:active {
+        transform: scale(0.95);
+    }
+}
+
+/* ===== HIGH DPI SCREENS ===== */
+@media (-webkit-min-device-pixel-ratio: 2),
+       (min-resolution: 192dpi) {
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+    .side-menu,
+    .top-bar,
+    .menu-trigger,
+    .game-controls-bar,
+    .game-navigation,
+    .help-btn,
+    button {
+        display: none !important;
+    }
+    
+    .container {
+        max-width: 100%;
+    }
+    
+    body {
+        background: white;
+        color: black;
+    }
+}
+
+/* ===== SAFE AREA INSETS (for notched devices) ===== */
+@supports (padding: env(safe-area-inset-top)) {
+    .top-bar {
+        padding-top: calc(15px + env(safe-area-inset-top));
+        padding-left: max(15px, env(safe-area-inset-left));
+        padding-right: max(15px, env(safe-area-inset-right));
+    }
+    
+    .game-controls-bar {
+        padding-top: env(safe-area-inset-top);
+    }
+    
+    .menu-dropdown {
+        padding-left: max(15px, env(safe-area-inset-left));
+    }
+}
