@@ -54,24 +54,6 @@
       transition: width 0.3s ease;
     }
 
-    /* HUD always on top of iframe */
-    #hud {
-      position: absolute;
-      top: 12px; right: 14px;
-      display: flex; gap: 8px;
-      z-index: 30;
-      font-family: 'Courier New', monospace;
-    }
-    .hud-btn {
-      background: rgba(0,0,0,0.55);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: #fff;
-      padding: 5px 12px; border-radius: 5px;
-      cursor: pointer; font-size: 0.75rem;
-      transition: background 0.2s;
-    }
-    .hud-btn:hover { background: rgba(0,0,0,0.8); }
-
     /* guest banner */
     #guest-banner {
       display: none;
@@ -97,12 +79,6 @@
 
 <!-- Pygbag iframe – src set by JS after token injection -->
 <iframe id="pygbag-frame" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
-
-<!-- HUD -->
-<div id="hud">
-  <button class="hud-btn" id="fullscreenBtn">⛶ Fullscreen</button>
-  <button class="hud-btn" id="exitBtn">✕ Exit</button>
-</div>
 
 <!-- Guest banner -->
 <div id="guest-banner">
@@ -163,31 +139,7 @@ frame.onerror = function() {
 
 frame.src = pygbagSrc;
 
-// ── 4. HUD ────────────────────────────────────────────────────────────────────
-function exitGame() {
-  try {
-    if (window.parent && window.parent.app) {
-      window.parent.app.navigateTo('games');
-    } else {
-      window.history.back();
-    }
-  } catch(e) { window.history.back(); }
-}
 
-document.getElementById('fullscreenBtn').addEventListener('click', function() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen();
-    this.textContent = '⊡ Exit Fullscreen';
-  } else {
-    document.exitFullscreen();
-    this.textContent = '⛶ Fullscreen';
-  }
-});
-document.getElementById('exitBtn').addEventListener('click', exitGame);
-document.addEventListener('fullscreenchange', function() {
-  var btn = document.getElementById('fullscreenBtn');
-  if (btn) btn.textContent = document.fullscreenElement ? '⊡ Exit Fullscreen' : '⛶ Fullscreen';
-});
 </script>
 </body>
 </html>
