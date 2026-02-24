@@ -65,9 +65,9 @@ class ProfileManager {
         document.getElementById('profileUsername').textContent = profile.username || '';
 
         // Avatar
-        if (profile.avatar) {
-            document.getElementById('profileAvatarLarge').src = `assets/players/${profile.avatar}`;
-        }
+        document.getElementById('profileAvatarLarge').src = profile.avatar
+            ? `assets/players/${profile.avatar}`
+            : 'assets/players/1000055338.png';
 
         // Bio
         const bioElement = document.getElementById('userBio');

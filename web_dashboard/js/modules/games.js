@@ -11,7 +11,7 @@ class GamesManager {
                 name: 'SI3LN',
                 description: 'Space Invaders III Last Night',
                 url: 'game/index.html',  // Placeholder - see GAME_INTEGRATION.md
-                thumbnail: 'assets/worlds/home_page.png'
+                thumbnail: 'assets/worlds/home_page.jpg'
             },
             {
                 id: 'game2',

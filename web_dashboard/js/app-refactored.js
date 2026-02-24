@@ -322,7 +322,26 @@ class AppManager {
             console.error('Error loading settings:', error);
         }
     }
-            document.getElementById('settingsContent').innerHTML = `
-                <div class="admin-panel">
-                    <h2>⚙️ Administration</h2>
-                    <p><a href="/admin/" target="_blank">→ Open Django Admin Panel</a></p>
+
+    checkAuth() {
+        const token = localStorage.getItem('access_token');
+        const isLoggedIn = !!token;
+        const username = isLoggedIn ? (window.api?.getLocalUsername?.() ?? '') : '';
+        this.authManager.updateAuthUI(isLoggedIn, username);
+    }
+
+    logout() {
+        localStorage.removeItem('access_token');
+        this.authManager.updateAuthUI(false);
+        this.navigateTo('home');
+    }
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+// window.api is already set by api.js (loaded before this file).
+// We only need to create AppManager here.
+document.addEventListener('DOMContentLoaded', () => {
+    // Ensure api client exists (safety – api.js loads first anyway)
+    if (!window.api) { window.api = new APIClient(); }
+    window.app = new AppManager();
+});

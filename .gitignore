@@ -1,0 +1,59 @@
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ─── Virtual environments ────────────────────────────────────────────────────
+env/bin/
+env/lib/
+env/include/
+env/pyvenv.cfg
+venv/
+.venv/
+ENV/
+
+# ─── Django ──────────────────────────────────────────────────────────────────
+*.sqlite3
+/api/staticfiles/
+/api/media/
+/api/Base_de_donnée_SQL/*.sqlite3
+
+# ─── Secrets – NEVER commit real credentials ─────────────────────────────────
+env/.env
+.env
+!env/.env.example
+
+# ─── Pygbag / Game build output ──────────────────────────────────────────────
+Game_Python/build/
+Game_Python/dist/
+Game_Python/__pycache__/
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Node (if ever used) ─────────────────────────────────────────────────────
+node_modules/
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# ─── IDE ─────────────────────────────────────────────────────────────────────
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ─── Docker leftovers ────────────────────────────────────────────────────────
+.docker/

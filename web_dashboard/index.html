@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Chakra+Petch:wght@300;400;600&display=swap" rel="stylesheet">
     <title>ARCAD3X Dashboard</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/modules/profile.css">
-    <link rel="stylesheet" href="css/modules/games.css">
-    <link rel="stylesheet" href="css/modules/auth.css">
-    <link rel="stylesheet" href="css/modules/help.css">
-    <link rel="stylesheet" href="css/language-switcher.css">
-    <link rel="stylesheet" href="css/responsive.css">
-    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/modules/profile.css?v=3">
+    <link rel="stylesheet" href="css/modules/games.css?v=3">
+    <link rel="stylesheet" href="css/modules/auth.css?v=3">
+    <link rel="stylesheet" href="css/modules/help.css?v=3">
+    <link rel="stylesheet" href="css/language-switcher.css?v=3">
+    <link rel="stylesheet" href="css/responsive.css?v=3">
+    <link rel="stylesheet" href="css/mobile.css?v=3">
 </head>
 <body>
     <!-- Menu latéral gauche avec triangle PLAY -->
@@ -319,7 +319,7 @@
                     <div class="profile-header">
                         <div class="profile-header-left">
                             <div class="profile-avatar-container">
-                                <img src="assets/players/default-avatar.png" alt="Avatar" class="profile-avatar-large" id="profileAvatarLarge">
+                                <img src="assets/players/1000055338.png" alt="Avatar" class="profile-avatar-large" id="profileAvatarLarge">
                             </div>
                             <div class="profile-name-section">
                                 <h2 id="profileDisplayName">Pseudo du joueur</h2>
@@ -562,7 +562,7 @@
                 <!-- Carte SI3LN (jeu principal) -->
                 <div class="game-card-large" id="si3lnGameCard">
                     <div class="game-card-image">
-                        <img src="assets/worlds/home_page.png" alt="SI3LN">
+                        <img src="assets/worlds/home_page.jpg" alt="SI3LN">
                         <div class="game-overlay">
                             <span class="play-now">▶ PLAY NOW</span>
                         </div>
@@ -656,22 +656,19 @@
 
     <!-- Scripts -->
     <!-- i18n (must load first) -->
-    <script src="js/i18n.js"></script>
+    <script src="js/i18n.js?v=3"></script>
     
     <!-- API Client -->
-    <script src="api.js"></script>
+    <script src="api.js?v=3"></script>
     
     <!-- Modules -->
-    <script src="js/modules/profile.js"></script>
-    <script src="js/modules/games.js"></script>
-    <script src="js/modules/auth.js"></script>
-    <script src="js/modules/help.js"></script>
-    <script src="js/modules/mobile.js"></script>
+    <script src="js/modules/profile.js?v=3"></script>
+    <script src="js/modules/games.js?v=3"></script>
+    <script src="js/modules/auth.js?v=3"></script>
+    <script src="js/modules/help.js?v=3"></script>
+    <script src="js/modules/mobile.js?v=3"></script>
     
     <!-- Main App -->
-    <!-- Option 1: Use refactored version (recommended) -->
-    <script src="js/app-refactored.js"></script>
-    <!-- Option 2: Use original version (comment above and uncomment below) -->
-    <!-- <script src="js/app.js"></script> -->
+    <script src="js/app-refactored.js?v=2"></script>
 </body>
 </html>
