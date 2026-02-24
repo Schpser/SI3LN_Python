@@ -393,17 +393,24 @@ footer {
     font-family: var(--font-retro);
     font-size: 1.2rem;
     font-weight: 900;
+    letter-spacing: 0.3rem;
+    white-space: nowrap;
+    filter: drop-shadow(0 0 8px rgba(0, 210, 255, 0.4));
+}
+
+.top-bar-title a {
     background: linear-gradient(90deg, #00d2ff, #3a47d5, #00d2ff);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    letter-spacing: 0.3rem;
-    pointer-events: none;
-    white-space: nowrap;
+    text-decoration: none;
     animation: titleShimmer 4s linear infinite;
-    text-shadow: none;
-    filter: drop-shadow(0 0 8px rgba(0, 210, 255, 0.4));
+    display: inline-block;
+}
+
+.top-bar-title a:hover {
+    filter: drop-shadow(0 0 12px rgba(0, 210, 255, 0.7));
 }
 
 @keyframes titleShimmer {
