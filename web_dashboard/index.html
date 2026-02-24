@@ -77,33 +77,39 @@
                 <button class="search-button">🔍</button>
             </div>
             
-            <!-- Language Switcher -->
-            <div class="language-switcher" id="languageSwitcher">
-                <button class="language-btn" id="languageBtn">
-                    <span class="language-icon">🌐</span>
-                    <span class="language-code" id="currentLanguage">EN</span>
-                </button>
-                <div class="language-dropdown hidden" id="languageDropdown">
-                    <button class="language-option" data-lang="en">
-                        <span class="flag">🇬🇧</span>
-                        <span>English</span>
-                    </button>
-                    <button class="language-option" data-lang="fr">
-                        <span class="flag">🇫🇷</span>
-                        <span>Français</span>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Simple login link (for non-logged users) -->
-            <div class="top-bar-auth guest-only" id="topBarAuth">
-                <a href="#" class="auth-link" id="topLoginLink" data-i18n="topBar.loginSignup">🔐 Login / Sign Up</a>
-            </div>
+<!-- Centered site title -->
+            <div class="top-bar-title">ARCAD3X</div>
 
-            <!-- Infos user connecté (caché par défaut) -->
-            <div class="user-info hidden" id="userInfo">
-                <span id="userName"></span>
-                <button class="logout-btn" id="logoutBtn" data-i18n="topBar.logout">Logout</button>
+            <!-- Right group: Language switcher + Auth -->
+            <div class="top-bar-right">
+                <!-- Language Switcher -->
+                <div class="language-switcher" id="languageSwitcher">
+                    <button class="language-btn" id="languageBtn">
+                        <span class="language-icon">🌐</span>
+                        <span class="language-code" id="currentLanguage">EN</span>
+                    </button>
+                    <div class="language-dropdown hidden" id="languageDropdown">
+                        <button class="language-option" data-lang="en">
+                            <span class="flag">🇬🇧</span>
+                            <span>English</span>
+                        </button>
+                        <button class="language-option" data-lang="fr">
+                            <span class="flag">🇫🇷</span>
+                            <span>Français</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Simple login link (for non-logged users) -->
+                <div class="top-bar-auth guest-only" id="topBarAuth">
+                    <a href="#" class="auth-link" id="topLoginLink" data-i18n="topBar.loginSignup">🔐 Login / Sign Up</a>
+                </div>
+
+                <!-- Infos user connecté (caché par défaut) -->
+                <div class="user-info hidden" id="userInfo">
+                    <span id="userName"></span>
+                    <button class="logout-btn" id="logoutBtn" data-i18n="topBar.logout">Logout</button>
+                </div>
             </div>
         </div>
 

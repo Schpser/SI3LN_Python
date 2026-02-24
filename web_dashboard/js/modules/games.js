@@ -62,11 +62,13 @@ class GamesManager {
                 // Guest mode - show info
                 this.showGuestInfo();
             } else {
-                // Registered user - create game session
-                await this.startGameSession();
+                // Registered user - create game session (non-blocking, won't prevent game from loading)
+                this.startGameSession().catch(err => {
+                    console.warn('Game session creation failed (non-blocking):', err);
+                });
             }
-            
-            // Load game in iframe
+
+            // Load game in iframe (always runs regardless of session status)
             setTimeout(() => {
                 if (loadingElement) {
                     loadingElement.style.display = 'none';
@@ -160,21 +162,35 @@ class GamesManager {
     }
     
     toggleFullscreen() {
-        const gameContainer = document.getElementById('game-play-page');
-        
+        const gameContainer = document.getElementById('game-play-page') || document.documentElement;
+
         if (!document.fullscreenElement) {
-            gameContainer.requestFullscreen().then(() => {
-                this.isFullscreen = true;
-                this.updateFullscreenUI();
-            }).catch(err => {
-                console.error('Error attempting to enable fullscreen:', err);
-            });
+            // Use vendor-prefixed API for cross-browser support (Chrome, Firefox, Safari)
+            const requestFS = gameContainer.requestFullscreen
+                || gameContainer.webkitRequestFullscreen
+                || gameContainer.mozRequestFullScreen
+                || gameContainer.msRequestFullscreen;
+
+            if (requestFS) {
+                requestFS.call(gameContainer).then(() => {
+                    this.isFullscreen = true;
+                    this.updateFullscreenUI();
+                }).catch(err => {
+                    console.error('Error attempting to enable fullscreen:', err);
+                });
+            }
         } else {
-            document.exitFullscreen().then(() => {
-                this.isFullscreen = false;
-                this.updateFullscreenUI();
-            });
-        }
+            const exitFS = document.exitFullscreen
+                || document.webkitExitFullscreen
+                || document.mozCancelFullScreen
+                || document.msExitFullscreen;
+
+            if (exitFS) {
+                exitFS.call(document).then(() => {
+                    this.isFullscreen = false;
+                    this.updateFullscreenUI();
+                });
+            }
     }
     
     updateFullscreenUI() {

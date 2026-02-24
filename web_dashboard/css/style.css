@@ -386,6 +386,38 @@ footer {
     z-index: 900;
 }
 
+.top-bar-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-retro);
+    font-size: 1.2rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, #00d2ff, #3a47d5, #00d2ff);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.3rem;
+    pointer-events: none;
+    white-space: nowrap;
+    animation: titleShimmer 4s linear infinite;
+    text-shadow: none;
+    filter: drop-shadow(0 0 8px rgba(0, 210, 255, 0.4));
+}
+
+@keyframes titleShimmer {
+    0%   { background-position: 0% center; }
+    100% { background-position: 200% center; }
+}
+
+.top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+}
+
 .search-container {
     display: flex;
     gap: 10px;
