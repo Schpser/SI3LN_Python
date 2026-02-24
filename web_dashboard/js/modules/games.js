@@ -191,8 +191,9 @@ class GamesManager {
                     this.updateFullscreenUI();
                 });
             }
+        }
     }
-    
+
     updateFullscreenUI() {
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         if (fullscreenBtn) {

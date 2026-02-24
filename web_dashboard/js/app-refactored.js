@@ -137,8 +137,19 @@ class AppManager {
                 this.menuDropdown.classList.remove('visible');
             });
         }
+
+        // Top-bar site title link (ARCAD3X in top bar)
+        const topBarTitle = document.querySelector('.top-bar-title a[data-page]');
+        if (topBarTitle) {
+            topBarTitle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetPage = topBarTitle.getAttribute('data-page') || 'home';
+                this.navigateTo(targetPage);
+            });
+        }
     }
-        initLanguageSwitcher() {
+
+    initLanguageSwitcher() {
         const languageBtn = document.getElementById('languageBtn');
         const languageDropdown = document.getElementById('languageDropdown');
         const languageOptions = document.querySelectorAll('.language-option');
@@ -198,7 +209,8 @@ class AppManager {
         // Initial display
         updateLanguageDisplay();
     }
-        navigateTo(pageName) {
+
+    navigateTo(pageName) {
         // Cacher toutes les pages
         this.pages.forEach(page => page.classList.add('hidden'));
         
