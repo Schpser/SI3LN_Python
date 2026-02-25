@@ -11,6 +11,10 @@ class Player(models.Model):
     total_score = models.IntegerField(default=0)
     games_played = models.IntegerField(default=0)
     highest_level = models.IntegerField(default=1)
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    bio = models.TextField(max_length=500, blank=True, default='')
+    bg_color = models.CharField(max_length=7, default='#000000')  # Hex color
+    show_scores = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

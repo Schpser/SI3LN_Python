@@ -113,6 +113,10 @@ class EnhancedProfileSchema(Schema):
     total_score: int
     games_played: int
     highest_level: int
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = ""
+    bg_color: Optional[str] = "#000000"
+    show_scores: bool = True
     created_at: datetime
     updated_at: datetime
     achievements_count: int
@@ -122,6 +126,9 @@ class EnhancedProfileSchema(Schema):
 class ProfileUpdateSchema(Schema):
     username: Optional[str] = None
     email: Optional[str] = None
+    bio: Optional[str] = None
+    bg_color: Optional[str] = None
+    show_scores: Optional[bool] = None
 
 
 # Password Change Schema

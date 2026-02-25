@@ -253,34 +253,46 @@ class AppManager {
     }
     
     async loadHomeData() {
+        // Load leaderboard — independent of profile, so failures don't cascade
         try {
-            // Load leaderboard — API returns a flat array of {player_username, score, ...}
             const leaderboardData = await window.api.getLeaderboard(3);
             const leaderboardDiv = document.getElementById('leaderboard');
             if (Array.isArray(leaderboardData) && leaderboardDiv) {
-                leaderboardDiv.innerHTML = leaderboardData
-                    .map((entry, i) => `<div class="lb-entry">
-                        <span class="lb-rank">#${i + 1}</span>
-                        <span class="lb-name">${entry.player_username}</span>
-                        <span class="lb-score">${entry.score} pts</span>
-                    </div>`)
-                    .join('');
+                if (leaderboardData.length === 0) {
+                    leaderboardDiv.innerHTML = '<p>No scores yet. Be the first to play!</p>';
+                } else {
+                    leaderboardDiv.innerHTML = leaderboardData
+                        .map((entry, i) => `<div class="lb-entry">
+                            <span class="lb-rank">#${i + 1}</span>
+                            <span class="lb-name">${entry.player_username}</span>
+                            <span class="lb-score">${entry.score} pts</span>
+                        </div>`)
+                        .join('');
+                }
             }
-            
-            // Show welcome message if logged in
-            const token = localStorage.getItem('access_token');
-            if (token) {
-                try {
-                    const profileData = await window.api.getCurrentPlayer();
-                    const profileDiv = document.getElementById('profile');
-                    if (profileDiv && profileData) {
-                        profileDiv.innerHTML = `Welcome, ${profileData.display_name || profileData.username}!`;
-                    }
-                } catch (_) { /* not logged in */ }
-            }
-            
         } catch (error) {
-            console.error('Erreur chargement home:', error);
+            console.error('Error loading leaderboard:', error);
+            const leaderboardDiv = document.getElementById('leaderboard');
+            if (leaderboardDiv) leaderboardDiv.innerHTML = '<p>Could not load leaderboard.</p>';
+        }
+
+        // Show welcome message if logged in (independent try/catch)
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            try {
+                const profileData = await window.api.getCurrentPlayer();
+                const profileDiv = document.getElementById('profile');
+                if (profileDiv && profileData) {
+                    profileDiv.innerHTML = `Welcome, ${profileData.username}!`;
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                const profileDiv = document.getElementById('profile');
+                if (profileDiv) {
+                    const username = window.api?.getLocalUsername?.();
+                    profileDiv.innerHTML = username ? `Welcome, ${username}!` : 'Please log in';
+                }
+            }
         }
     }
 

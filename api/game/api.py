@@ -254,6 +254,11 @@ def get_my_profile(request):
         for pa in recent_achievements
     ]
     
+    # Build avatar URL
+    avatar_url = None
+    if player.avatar:
+        avatar_url = request.build_absolute_uri(player.avatar.url)
+    
     return {
         "id": player.id,
         "username": player.username,
@@ -261,6 +266,10 @@ def get_my_profile(request):
         "total_score": player.total_score,
         "games_played": player.games_played,
         "highest_level": player.highest_level,
+        "avatar_url": avatar_url,
+        "bio": player.bio or "",
+        "bg_color": player.bg_color or "#000000",
+        "show_scores": player.show_scores,
         "created_at": player.created_at,
         "updated_at": player.updated_at,
         "achievements_count": PlayerAchievement.objects.filter(player=player).count(),
@@ -268,10 +277,10 @@ def get_my_profile(request):
     }
 
 
-@router.patch("/profile/me", response=PlayerSchema, tags=["Profile"], auth=jwt_auth)
+@router.patch("/profile/me", response=EnhancedProfileSchema, tags=["Profile"], auth=jwt_auth)
 def update_my_profile(request, payload: ProfileUpdateSchema):
     """Update current user's profile (requires authentication)"""
-    from .schemas import ProfileUpdateSchema, PlayerSchema
+    from .models import Player, PlayerAchievement
     
     user = request.auth
     player = get_object_or_404(Player, user=user)
@@ -287,5 +296,87 @@ def update_my_profile(request, payload: ProfileUpdateSchema):
         user.email = payload.email
         user.save()
     
+    if payload.bio is not None:
+        player.bio = payload.bio
+    
+    if payload.bg_color is not None:
+        player.bg_color = payload.bg_color
+    
+    if payload.show_scores is not None:
+        player.show_scores = payload.show_scores
+    
     player.save()
-    return player
+    
+    # Return full profile (same as GET /profile/me)
+    avatar_url = None
+    if player.avatar:
+        avatar_url = request.build_absolute_uri(player.avatar.url)
+    
+    recent_achievements = PlayerAchievement.objects.filter(
+        player=player
+    ).select_related('achievement').order_by('-unlocked_at')[:5]
+    
+    recent_list = [
+        {
+            "id": pa.achievement.id,
+            "name": pa.achievement.name,
+            "icon": pa.achievement.icon,
+            "points": pa.achievement.points,
+            "rarity": pa.achievement.rarity,
+            "unlocked_at": pa.unlocked_at.isoformat() if pa.unlocked_at else None,
+        }
+        for pa in recent_achievements
+    ]
+    
+    return {
+        "id": player.id,
+        "username": player.username,
+        "email": player.email or "",
+        "total_score": player.total_score,
+        "games_played": player.games_played,
+        "highest_level": player.highest_level,
+        "avatar_url": avatar_url,
+        "bio": player.bio or "",
+        "bg_color": player.bg_color or "#000000",
+        "show_scores": player.show_scores,
+        "created_at": player.created_at,
+        "updated_at": player.updated_at,
+        "achievements_count": PlayerAchievement.objects.filter(player=player).count(),
+        "recent_achievements": recent_list,
+    }
+
+
+@router.post("/profile/me/avatar", tags=["Profile"], auth=jwt_auth)
+def upload_avatar(request):
+    """Upload avatar image for current user (max 5MB, PNG/JPG/GIF)"""
+    from django.core.files.uploadhandler import MemoryFileUploadHandler
+    
+    user = request.auth
+    player = get_object_or_404(Player, user=user)
+    
+    avatar_file = request.FILES.get('avatar')
+    if not avatar_file:
+        from ninja.responses import Response
+        return Response({"error": "No avatar file provided"}, status=400)
+    
+    # Validate file size (5MB)
+    if avatar_file.size > 5 * 1024 * 1024:
+        from ninja.responses import Response
+        return Response({"error": "File too large. Maximum 5MB."}, status=400)
+    
+    # Validate file type
+    allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if avatar_file.content_type not in allowed_types:
+        from ninja.responses import Response
+        return Response({"error": "Invalid file type. Use PNG, JPG, GIF or WebP."}, status=400)
+    
+    # Delete old avatar if exists
+    if player.avatar:
+        player.avatar.delete(save=False)
+    
+    # Save new avatar
+    player.avatar = avatar_file
+    player.save()
+    
+    avatar_url = request.build_absolute_uri(player.avatar.url)
+    return {"message": "Avatar uploaded successfully", "avatar_url": avatar_url}

@@ -3,6 +3,8 @@ class ProfileManager {
     constructor(apiClient) {
         this.api = apiClient;
         this._editBtnInitialized = false;
+        this._pendingAvatarFile = null;   // file selected but not yet uploaded
+        this._currentProfile = null;      // cached profile data from last load
     }
 
     async loadProfile() {
@@ -16,6 +18,7 @@ class ProfileManager {
             
             // Load profile data
             const profileData = await this.api.getCurrentPlayer();
+            this._currentProfile = profileData;
             this.updateProfileDisplay(profileData);
             this.toggleEditButton(true);
             
@@ -59,19 +62,28 @@ class ProfileManager {
 
 
     updateProfileDisplay(profile) {
-        // Infos de base — use username (display_name not in schema)
+        // Username
         const displayName = profile.username || 'Player';
         document.getElementById('profileDisplayName').textContent = displayName;
         document.getElementById('profileUsername').textContent = profile.username || '';
 
-        // Avatar (not stored in backend yet - use default)
-        document.getElementById('profileAvatarLarge').src = 'assets/players/1000055338.png';
+        // Avatar — use backend URL if available, otherwise default
+        const avatarEl = document.getElementById('profileAvatarLarge');
+        if (profile.avatar_url) {
+            avatarEl.src = profile.avatar_url;
+        } else {
+            avatarEl.src = 'assets/players/1000055338.png';
+        }
 
-        // Bio (not stored in backend yet)
+        // Bio
         const bioElement = document.getElementById('userBio');
-        bioElement.innerHTML = '<p class="bio-placeholder">No description yet...</p>';
+        if (profile.bio) {
+            bioElement.innerHTML = `<p>${this._escapeHtml(profile.bio)}</p>`;
+        } else {
+            bioElement.innerHTML = '<p class="bio-placeholder">No description yet...</p>';
+        }
 
-        // Stats globales (proviennent de EnhancedProfileSchema)
+        // Stats
         const statsEl = document.getElementById('profileStats');
         if (statsEl) {
             statsEl.innerHTML = `
@@ -82,13 +94,24 @@ class ProfileManager {
             `;
         }
 
-        // Scores are loaded separately by loadBestScores()
-
-        // Jeux favoris (disabled until game is ready)
+        // Favorites (future)
         const favoritesGrid = document.getElementById('favoritesGrid');
         if (favoritesGrid) {
             favoritesGrid.innerHTML = '<div class="favorite-item">⭐ Favorites coming soon!</div>';
         }
+
+        // Apply saved background color
+        if (profile.bg_color && profile.bg_color !== '#000000') {
+            const container = document.querySelector('.profile-container');
+            if (container) container.style.backgroundColor = profile.bg_color;
+        }
+    }
+
+    /** Simple HTML escape to prevent XSS in bio */
+    _escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     toggleEditButton(show) {
@@ -96,7 +119,6 @@ class ProfileManager {
         if (!editBtn) return;
         if (show) {
             editBtn.classList.remove('hidden');
-            // Use onclick to avoid accumulating duplicate listeners
             editBtn.onclick = () => this.openEditModal();
         } else {
             editBtn.classList.add('hidden');
@@ -107,100 +129,130 @@ class ProfileManager {
     openEditModal() {
         const modal = document.getElementById('editProfileModal');
         modal.classList.remove('hidden');
+        this._pendingAvatarFile = null;
         
-        // Pré-remplir avec les données actuelles
+        // Pre-fill with current data
         this.populateEditModal();
         
-        // Gérer la fermeture
-        modal.querySelector('.modal-close').addEventListener('click', () => {
-            modal.classList.add('hidden');
-        });
+        // Close handlers (use onclick to avoid stacking listeners)
+        modal.querySelector('.modal-close').onclick = () => modal.classList.add('hidden');
+        modal.querySelector('.cancel-btn').onclick = () => modal.classList.add('hidden');
         
-        modal.querySelector('.cancel-btn').addEventListener('click', () => {
-            modal.classList.add('hidden');
-        });
+        // Save handler
+        document.getElementById('saveProfileBtn').onclick = () => this.saveProfileChanges();
         
-        // Gérer la sauvegarde
-        document.getElementById('saveProfileBtn').addEventListener('click', () => {
-            this.saveProfileChanges();
-        });
-        
-        // Gérer le compteur de caractères
+        // Bio character counter
         const bioTextarea = document.getElementById('editBio');
-        bioTextarea.addEventListener('input', () => {
+        bioTextarea.oninput = () => {
             document.getElementById('bioCharCount').textContent = bioTextarea.value.length;
-        });
+        };
         
-        // Gérer la sélection des couleurs
+        // Color selection
         document.querySelectorAll('.color-option').forEach(option => {
-            option.addEventListener('click', () => {
+            option.onclick = () => {
                 document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
                 option.classList.add('selected');
-            });
+            };
         });
         
-        // Gérer l'upload d'avatar
-        document.getElementById('avatarUpload').addEventListener('change', (e) => {
+        // Avatar upload — preview + store file for later upload
+        document.getElementById('avatarUpload').onchange = (e) => {
             const file = e.target.files[0];
-            if (file) {
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('File too big! Max 5MB');
-                    return;
-                }
-                // Preview
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    document.getElementById('profileAvatarLarge').src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File too big! Max 5MB');
+                e.target.value = '';
+                return;
             }
-        });
+            this._pendingAvatarFile = file;
+            // Preview
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('profileAvatarLarge').src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
     }
 
     populateEditModal() {
-        // Remplir avec les données actuelles
-        const currentBio = document.querySelector('#userBio p')?.textContent || '';
-        document.getElementById('editBio').value = currentBio;
-        document.getElementById('bioCharCount').textContent = currentBio.length;
+        const p = this._currentProfile || {};
         
-        // Cocher la bonne couleur
-        const currentBg = document.querySelector('.profile-container').style.backgroundColor;
-        if (currentBg) {
-            document.querySelectorAll('.color-option').forEach(opt => {
-                if (opt.dataset.color === currentBg) {
-                    opt.classList.add('selected');
-                }
-            });
-        }
+        // Bio
+        const bio = p.bio || '';
+        document.getElementById('editBio').value = bio;
+        document.getElementById('bioCharCount').textContent = bio.length;
+        
+        // Show scores toggle
+        const toggle = document.getElementById('showScoresToggle');
+        if (toggle) toggle.checked = p.show_scores !== false;
+        
+        // Highlight current background color
+        const currentBg = p.bg_color || '#000000';
+        document.querySelectorAll('.color-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.color === currentBg);
+        });
     }
 
     async saveProfileChanges() {
         const modal = document.getElementById('editProfileModal');
+        const saveBtn = document.getElementById('saveProfileBtn');
         
-        // Récupérer les données – only send fields the backend accepts (ProfileUpdateSchema)
-        const username = document.getElementById('profileUsername')?.textContent;
-        const email = null; // email editing not yet exposed in the modal
-        
-        const updates = {};
-        if (username) updates.username = username;
-        if (email) updates.email = email;
+        // Disable button during save
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
         
         try {
-            // Use PATCH /game/profile/me which accepts ProfileUpdateSchema
+            // 1. Upload avatar if a new file was selected
+            if (this._pendingAvatarFile) {
+                await this._uploadAvatar(this._pendingAvatarFile);
+                this._pendingAvatarFile = null;
+            }
+            
+            // 2. Save text/color fields via PATCH /game/profile/me
+            const updates = {
+                bio: document.getElementById('editBio').value,
+                bg_color: document.querySelector('.color-option.selected')?.dataset.color || '#000000',
+                show_scores: document.getElementById('showScoresToggle')?.checked ?? true,
+            };
+            
             await this.api.request('/game/profile/me', {
                 method: 'PATCH',
                 body: JSON.stringify(updates)
             });
+            
             modal.classList.add('hidden');
-            this.loadProfile(); // Recharger le profil
+            await this.loadProfile(); // Reload profile to reflect changes
+            
         } catch (error) {
             console.error('Erreur sauvegarde:', error);
             alert('Error saving changes');
+        } finally {
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; }
         }
     }
 
+    async _uploadAvatar(file) {
+        const token = localStorage.getItem('access_token');
+        const formData = new FormData();
+        formData.append('avatar', file);
+        
+        const response = await fetch('/api/game/profile/me/avatar', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+                // Note: do NOT set Content-Type — browser sets it with boundary for FormData
+            },
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(`Avatar upload failed: ${err}`);
+        }
+        
+        return response.json();
+    }
+
     showPublicProfile(username) {
-        // Afficher une version publique du profil
         document.getElementById('profileDisplayName').textContent = username || 'Guest';
         document.getElementById('profileUsername').textContent = username || 'guest';
         document.getElementById('userBio').innerHTML = '<p class="bio-placeholder">User not logged in</p>';

@@ -341,42 +341,8 @@ class AuthManager {
             terms?.checked;
     }
 
-    async handleSignup() {
-       const formData = {
-            email: document.getElementById('signupEmail').value,
-            username: document.getElementById('signupPseudo').value,
-            password: document.getElementById('signupPassword').value,
-            language: document.getElementById('preferredLanguage').value
-        };
-        
-        try {
-            const submitBtn = document.getElementById('signupSubmit');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = 'Création en cours...';
-            }
-            
-            const result = await this.api.signup(formData);
-            localStorage.setItem('access_token', result.token);
-            
-            // Rediriger vers le profil
-            if (window.app) {
-                window.app.navigateTo('home');
-                window.app.checkAuth();
-            }
-            
-        } catch (error) {
-            console.error('Erreur inscription:', error);
-            alert('Erreur lors de la création du compte: ' + (error.message || 'Unknown error'));
-            
-            const submitBtn = document.getElementById('signupSubmit');
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Créer mon compte';
-            }
-        }
-    }
 }
+
 
 // Export for use in main app
 window.AuthManager = AuthManager;
