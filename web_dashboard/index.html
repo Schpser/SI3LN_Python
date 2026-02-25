@@ -455,6 +455,107 @@
                     <div id="aboutContent"></div>
                 </div>
             </div>
+
+            <!-- Page Games -->
+            <div id="games-page" class="page hidden">
+                <div class="container">
+                    <h1 class="page-title">🎮 Games</h1>
+                    
+                    <div class="games-grid" id="gamesGrid">
+                        <!-- Carte SI3LN (jeu principal) -->
+                        <div class="game-card-large" id="si3lnGameCard">
+                            <div class="game-card-image">
+                                <img src="assets/worlds/home_page.jpg" alt="SI3LN">
+                                <div class="game-overlay">
+                                    <span class="play-now">▶ PLAY NOW</span>
+                                </div>
+                            </div>
+                            <div class="game-card-info">
+                                <h3>SI3LN</h3>
+                                <p>Space Invaders III Last Night</p>
+                            </div>
+                        </div>
+
+                        <!-- Cartes Coming Soon -->
+                        <div class="game-card coming-soon">
+                            <div class="coming-soon-content">
+                                <span class="coming-soon-icon">🎮</span>
+                                <h4>Coming Soon...</h4>
+                            </div>
+                        </div>
+
+                        <div class="game-card coming-soon">
+                            <div class="coming-soon-content">
+                                <span class="coming-soon-icon">🎮</span>
+                                <h4>Coming Soon...</h4>
+                            </div>
+                        </div>
+
+                        <div class="game-card coming-soon">
+                            <div class="coming-soon-content">
+                                <span class="coming-soon-icon">🎮</span>
+                                <h4>Coming Soon...</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page de jeu (plein écran) -->
+            <div id="game-play-page" class="page hidden fullscreen-page">
+                <!-- Game controls bar -->
+                <div class="game-controls-bar">
+                    <button class="game-control-btn" id="exitGameBtn">
+                        <span class="control-icon">⬅</span>
+                        <span class="control-text">Exit Game</span>
+                    </button>
+                    
+                    <div class="game-title-display">
+                        <span class="game-icon">🎮</span>
+                        <span class="game-name" id="currentGameName">SI3LN</span>
+                    </div>
+                    
+                    <button class="game-control-btn" id="fullscreenBtn">
+                        <span class="control-icon">⛶</span>
+                        <span class="control-text">Fullscreen</span>
+                    </button>
+                </div>
+                
+                <!-- Guest info banner -->
+                <div class="guest-info-banner guest-only" id="guestInfo" style="display: none;">
+                    <span class="info-icon">ℹ️</span>
+                    <span>Playing as guest - Your score won't be saved. <a href="#" onclick="window.app.navigateTo('login'); return false;">Login</a> to save your progress!</span>
+                </div>
+                
+                <!-- Navigation du jeu -->
+                <div class="game-navigation">
+                    <button class="game-nav-btn" id="prevGameBtn">
+                        <span class="nav-arrow">◀</span>
+                        <span class="nav-text">Previous</span>
+                    </button>
+                    
+                    <button class="game-nav-btn" id="nextGameBtn">
+                        <span class="nav-text">Next</span>
+                        <span class="nav-arrow">▶</span>
+                    </button>
+                </div>
+
+                <!-- Conteneur du jeu -->
+                <div class="game-fullscreen-container">
+                    <iframe id="gameFrame" class="game-iframe"
+                            allow="cross-origin-isolated" 
+                            title="SI3LN Game"
+                            allowfullscreen>
+                    </iframe>
+                    
+                    <!-- Overlay de chargement -->
+                    <div class="game-loading" id="gameLoading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading game...</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
 
@@ -555,107 +656,6 @@
             </div>
         </div>
     </template>
-
-        <!-- Page Games -->
-    <div id="games-page" class="page hidden">
-        <div class="container">
-            <h1 class="page-title">🎮 Games</h1>
-            
-            <div class="games-grid" id="gamesGrid">
-                <!-- Carte SI3LN (jeu principal) -->
-                <div class="game-card-large" id="si3lnGameCard">
-                    <div class="game-card-image">
-                        <img src="assets/worlds/home_page.jpg" alt="SI3LN">
-                        <div class="game-overlay">
-                            <span class="play-now">▶ PLAY NOW</span>
-                        </div>
-                    </div>
-                    <div class="game-card-info">
-                        <h3>SI3LN</h3>
-                        <p>Space Invaders III Last Night</p>
-                        <!-- Stats will be populated from DB later -->
-                    </div>
-                </div>
-
-                <!-- Cartes Coming Soon -->
-                <div class="game-card coming-soon">
-                    <div class="coming-soon-content">
-                        <span class="coming-soon-icon">🎮</span>
-                        <h4>Coming Soon...</h4>
-                    </div>
-                </div>
-
-                <div class="game-card coming-soon">
-                    <div class="coming-soon-content">
-                        <span class="coming-soon-icon">🎮</span>
-                        <h4>Coming Soon...</h4>
-                    </div>
-                </div>
-
-                <div class="game-card coming-soon">
-                    <div class="coming-soon-content">
-                        <span class="coming-soon-icon">🎮</span>
-                        <h4>Coming Soon...</h4>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Page de jeu (plein écran) -->
-    <div id="game-play-page" class="page hidden fullscreen-page">
-        <!-- Game controls bar -->
-        <div class="game-controls-bar">
-            <button class="game-control-btn" id="exitGameBtn">
-                <span class="control-icon">⬅</span>
-                <span class="control-text">Exit Game</span>
-            </button>
-            
-            <div class="game-title-display">
-                <span class="game-icon">🎮</span>
-                <span class="game-name" id="currentGameName">SI3LN</span>
-            </div>
-            
-            <button class="game-control-btn" id="fullscreenBtn">
-                <span class="control-icon">⛶</span>
-                <span class="control-text">Fullscreen</span>
-            </button>
-        </div>
-        
-        <!-- Guest info banner -->
-        <div class="guest-info-banner guest-only" id="guestInfo" style="display: none;">
-            <span class="info-icon">ℹ️</span>
-            <span>Playing as guest - Your score won't be saved. <a href="#" onclick="window.app.navigateTo('login'); return false;">Login</a> to save your progress!</span>
-        </div>
-        
-        <!-- Navigation du jeu -->
-        <div class="game-navigation">
-            <button class="game-nav-btn" id="prevGameBtn">
-                <span class="nav-arrow">◀</span>
-                <span class="nav-text">Previous</span>
-            </button>
-            
-            <button class="game-nav-btn" id="nextGameBtn">
-                <span class="nav-text">Next</span>
-                <span class="nav-arrow">▶</span>
-            </button>
-        </div>
-
-        <!-- Conteneur du jeu -->
-        <div class="game-fullscreen-container">
-            <iframe id="gameFrame" class="game-iframe"
-                    allow="cross-origin-isolated" 
-                    title="SI3LN Game"
-                    allowfullscreen>
-            </iframe>
-            
-            <!-- Overlay de chargement -->
-            <div class="game-loading" id="gameLoading">
-                <div class="loading-spinner"></div>
-                <p>Loading game...</p>
-            </div>
-        </div>
-    </div>
 
     <!-- Scripts -->
     <!-- i18n (must load first) -->

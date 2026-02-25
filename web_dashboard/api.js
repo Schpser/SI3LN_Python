@@ -135,13 +135,12 @@ class APIClient {
     }
 
     // Game Sessions (for C++ game engine integration)
-    async createGameSession(playerId, worldId = 1) {
+    async createGameSession(playerId, worldId = null) {
+        const body = { player_id: playerId };
+        if (worldId) body.world_id = worldId;
         return this.request('/game/sessions', {
             method: 'POST',
-            body: JSON.stringify({
-                player_id: playerId,
-                world_id: worldId
-            })
+            body: JSON.stringify(body)
         });
     }
 

@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from .jwt_auth import JWTAuth
 from .auth_decorators import jwt_auth
+from game.schemas import ChangePasswordSchema, AccountUpdateSchema
 
 router = Router()
 
@@ -70,7 +71,7 @@ def login(request, payload: LoginSchema):
     # Get or create player profile
     player, _ = Player.objects.get_or_create(
         user=user,
-        defaults={'username': user.username, 'email': user.email or ''}
+        defaults={'username': user.username, 'email': user.email or None}
     )
     
     # Generate JWT token (expires in 24 hours)
@@ -144,53 +145,44 @@ def get_current_user(request):
 
 
 @router.post("/change-password", tags=["Auth"], auth=jwt_auth)
-def change_password(request, payload):
+def change_password(request, payload: ChangePasswordSchema):
     """Change password for authenticated user"""
-    from game.schemas import ChangePasswordSchema, MessageSchema
-    
     user = request.auth
     
-    # Parse the payload
-    old_password = payload.get('old_password')
-    new_password = payload.get('new_password')
-    
-    if not old_password or not new_password:
-        return Response({"error": "Both old_password and new_password are required"}, status=400)
-    
     # Verify old password
-    if not user.check_password(old_password):
+    if not user.check_password(payload.old_password):
         return Response({"error": "Current password is incorrect"}, status=400)
     
     # Set new password
-    user.set_password(new_password)
+    user.set_password(payload.new_password)
     user.save()
     
     return {"message": "Password changed successfully"}
 
 
 @router.patch("/update-account", tags=["Auth"], auth=jwt_auth)
-def update_account(request, payload):
+def update_account(request, payload: AccountUpdateSchema):
     """Update account email and name for authenticated user"""
     from game.models import Player
     
     user = request.auth
     
     # Update user fields if provided
-    if 'email' in payload:
-        user.email = payload['email']
+    if payload.email is not None:
+        user.email = payload.email
         # Also update player email
         try:
             player = Player.objects.get(user=user)
-            player.email = payload['email']
+            player.email = payload.email or None
             player.save()
         except Player.DoesNotExist:
             pass
     
-    if 'first_name' in payload:
-        user.first_name = payload['first_name']
+    if payload.first_name is not None:
+        user.first_name = payload.first_name
     
-    if 'last_name' in payload:
-        user.last_name = payload['last_name']
+    if payload.last_name is not None:
+        user.last_name = payload.last_name
     
     user.save()
     

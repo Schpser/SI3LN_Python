@@ -59,23 +59,17 @@ class ProfileManager {
 
 
     updateProfileDisplay(profile) {
-        // Infos de base — display_name n'existe pas dans le schéma, on utilise username
-        const displayName = profile.display_name || profile.username || 'Player';
+        // Infos de base — use username (display_name not in schema)
+        const displayName = profile.username || 'Player';
         document.getElementById('profileDisplayName').textContent = displayName;
         document.getElementById('profileUsername').textContent = profile.username || '';
 
-        // Avatar
-        document.getElementById('profileAvatarLarge').src = profile.avatar
-            ? `assets/players/${profile.avatar}`
-            : 'assets/players/1000055338.png';
+        // Avatar (not stored in backend yet - use default)
+        document.getElementById('profileAvatarLarge').src = 'assets/players/1000055338.png';
 
-        // Bio
+        // Bio (not stored in backend yet)
         const bioElement = document.getElementById('userBio');
-        if (profile.bio) {
-            bioElement.innerHTML = `<p>${profile.bio}</p>`;
-        } else {
-            bioElement.innerHTML = '<p class="bio-placeholder">No description yet...</p>';
-        }
+        bioElement.innerHTML = '<p class="bio-placeholder">No description yet...</p>';
 
         // Stats globales (proviennent de EnhancedProfileSchema)
         const statsEl = document.getElementById('profileStats');
@@ -94,11 +88,6 @@ class ProfileManager {
         const favoritesGrid = document.getElementById('favoritesGrid');
         if (favoritesGrid) {
             favoritesGrid.innerHTML = '<div class="favorite-item">⭐ Favorites coming soon!</div>';
-        }
-
-        // Appliquer le fond d'écran personnalisé si existant
-        if (profile.bg_color) {
-            document.querySelector('.profile-container').style.backgroundColor = profile.bg_color;
         }
     }
 
@@ -188,19 +177,20 @@ class ProfileManager {
     async saveProfileChanges() {
         const modal = document.getElementById('editProfileModal');
         
-        // Récupérer les données
-        const updates = {
-            bio: document.getElementById('editBio').value,
-            show_scores: document.getElementById('showScoresToggle').checked,
-            bg_color: document.querySelector('.color-option.selected')?.dataset.color || '#000000',
-        };
+        // Récupérer les données – only send fields the backend accepts (ProfileUpdateSchema)
+        const username = document.getElementById('profileUsername')?.textContent;
+        const email = null; // email editing not yet exposed in the modal
+        
+        const updates = {};
+        if (username) updates.username = username;
+        if (email) updates.email = email;
         
         try {
-            // Get player_id from token
-            const token = localStorage.getItem('access_token');
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            
-            await this.api.updatePlayer(payload.player_id, updates);
+            // Use PATCH /game/profile/me which accepts ProfileUpdateSchema
+            await this.api.request('/game/profile/me', {
+                method: 'PATCH',
+                body: JSON.stringify(updates)
+            });
             modal.classList.add('hidden');
             this.loadProfile(); // Recharger le profil
         } catch (error) {

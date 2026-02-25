@@ -115,7 +115,7 @@ class GamesManager {
             const payload = JSON.parse(atob(token.split('.')[1]));
             const playerId = payload.player_id;
 
-            const response = await window.api.createGameSession(playerId, 1);
+            const response = await window.api.createGameSession(playerId, null);
             this.gameSession = response;
             console.log('Game session started:', this.gameSession);
         } catch (error) {
@@ -132,6 +132,7 @@ class GamesManager {
                 body: JSON.stringify({
                     score: score,
                     level_reached: level,
+                    completed: true,
                     ended_at: new Date().toISOString()
                 })
             });
