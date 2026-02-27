@@ -9,31 +9,45 @@ class ProfileManager {
 
     async loadProfile() {
         try {
-            const token = localStorage.getItem('access_token');
+            const facade = window.facade;
+            const isAuth = facade ? facade.isAuthenticated() : !!localStorage.getItem(window.APP_CONFIG?.TOKEN_KEY || 'access_token');
             
-            if (!token) {
+            if (!isAuth) {
                 this.showPublicProfile('guest');
                 return;
             }
             
             // Load profile data
-            const profileData = await this.api.getCurrentPlayer();
+            const profileData = facade
+                ? await facade.getCurrentPlayer()
+                : await this.api.getCurrentPlayer();
             this._currentProfile = profileData;
             this.updateProfileDisplay(profileData);
             this.toggleEditButton(true);
             
             // Load best scores from sessions
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            await this.loadBestScores(payload.player_id);
+            const playerId = facade?.getLocalPlayerId() || this._getPlayerId();
+            if (playerId) await this.loadBestScores(playerId);
             
         } catch (error) {
-            console.error('Erreur chargement profil:', error);
+            if (window.AppLogger) window.AppLogger.error('Profile load error');
         }
+    }
+
+    /** Extract player_id from JWT (fallback when facade unavailable) */
+    _getPlayerId() {
+        try {
+            const token = localStorage.getItem(window.APP_CONFIG?.TOKEN_KEY || 'access_token');
+            if (!token) return null;
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.player_id;
+        } catch { return null; }
     }
 
     async loadBestScores(playerId) {
         try {
-            const sessions = await this.api.getGameSessions(playerId);
+            const api = window.facade || this.api;
+            const sessions = await api.getGameSessions(playerId);
             const scoresList = document.getElementById('bestScoresList');
             if (!scoresList) return;
 
@@ -214,16 +228,20 @@ class ProfileManager {
                 show_scores: document.getElementById('showScoresToggle')?.checked ?? true,
             };
             
-            await this.api.request('/game/profile/me', {
-                method: 'PATCH',
-                body: JSON.stringify(updates)
-            });
+            if (window.facade) {
+                await window.facade.updateProfile(updates);
+            } else {
+                await this.api.request('/game/profile/me', {
+                    method: 'PATCH',
+                    body: JSON.stringify(updates)
+                });
+            }
             
             modal.classList.add('hidden');
             await this.loadProfile(); // Reload profile to reflect changes
             
         } catch (error) {
-            console.error('Erreur sauvegarde:', error);
+            if (window.AppLogger) window.AppLogger.error('Save profile error');
             alert('Error saving changes');
         } finally {
             if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; }
@@ -231,7 +249,13 @@ class ProfileManager {
     }
 
     async _uploadAvatar(file) {
-        const token = localStorage.getItem('access_token');
+        // Prefer facade if available
+        if (window.facade) {
+            return await window.facade.uploadAvatar(file);
+        }
+        
+        const tokenKey = window.APP_CONFIG?.TOKEN_KEY || 'access_token';
+        const token = localStorage.getItem(tokenKey);
         const formData = new FormData();
         formData.append('avatar', file);
         

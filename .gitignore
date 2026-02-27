@@ -1,0 +1,50 @@
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ─── Django ──────────────────────────────────────────────────────────────────
+api/db.sqlite3
+api/staticfiles/
+# NOTE: api/media/ is NOT ignored – player avatars & shared content must be
+# available for all team members so they can see each other's profiles.
+
+# ─── Environment ─────────────────────────────────────────────────────────────
+env/.env
+.env
+*.env.local
+.venv/
+venv/
+
+# ─── IDE / Editor ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Docker ──────────────────────────────────────────────────────────────────
+# Volumes managed by Docker Compose (never committed)
+postgres_data/
+redis_data/
+
+# ─── Pygbag build output ────────────────────────────────────────────────────
+Game_Python/build/
+
+# ─── Node (if front-end tooling is added later) ─────────────────────────────
+node_modules/
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+*.log
+*.bak
+*.backup

@@ -1,11 +1,14 @@
-// help.js - Help page management module
+// help.js - Help page management module (v2 — downloadable report file)
+// =====================================================================
+
+'use strict';
+
 class HelpManager {
     constructor() {
         this.currentView = 'menu';
     }
 
     initHelpHandlers() {
-        // Help button handlers
         const helpButtons = document.querySelectorAll('.help-btn');
         helpButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -14,27 +17,27 @@ class HelpManager {
             });
         });
 
-        // Back button handler
         const backBtn = document.getElementById('helpBackBtn');
         if (backBtn) {
-            backBtn.addEventListener('click', () => {
-                this.showHelpMenu();
-            });
+            backBtn.addEventListener('click', () => this.showHelpMenu());
         }
     }
 
     showHelpMenu() {
-        document.querySelector('.help-content').classList.remove('hidden');
-        document.getElementById('helpDetailPanel').classList.add('hidden');
+        const helpContent = document.querySelector('.help-content');
+        const detailPanel = document.getElementById('helpDetailPanel');
+        if (helpContent) helpContent.classList.remove('hidden');
+        if (detailPanel) detailPanel.classList.add('hidden');
         this.currentView = 'menu';
     }
 
     showHelpDetail(type) {
-        document.querySelector('.help-content').classList.add('hidden');
+        const helpContent = document.querySelector('.help-content');
         const detailPanel = document.getElementById('helpDetailPanel');
         const detailContent = document.getElementById('helpDetailContent');
         
-        detailPanel.classList.remove('hidden');
+        if (helpContent) helpContent.classList.add('hidden');
+        if (detailPanel) detailPanel.classList.remove('hidden');
         
         switch(type) {
             case 'games':
@@ -51,7 +54,6 @@ class HelpManager {
                 break;
         }
         
-        // Initialize form handlers if applicable
         this.initFormHandlers(type);
         this.currentView = type;
     }
@@ -59,13 +61,10 @@ class HelpManager {
     getGamesTutorialContent() {
         return `
             <h2>🎮 Games Tutorials</h2>
-            
             <div class="tutorial-section">
                 <h3>SI3LN - Space Invaders III Last Night</h3>
-                
                 <h4>📖 How to Play</h4>
                 <p>SI3LN is a modern take on the classic Space Invaders arcade game.</p>
-                
                 <h4>🎮 Controls</h4>
                 <ul>
                     <li><strong>Arrow Keys</strong> or <strong>WASD</strong> - Move your ship left/right</li>
@@ -73,7 +72,6 @@ class HelpManager {
                     <li><strong>P</strong> - Pause game</li>
                     <li><strong>ESC</strong> - Exit to menu</li>
                 </ul>
-                
                 <h4>🎯 Gameplay</h4>
                 <ul>
                     <li>Destroy all alien invaders before they reach the bottom</li>
@@ -81,7 +79,6 @@ class HelpManager {
                     <li>Watch out for the UFO - it gives bonus points!</li>
                     <li>Complete levels to unlock new worlds</li>
                 </ul>
-                
                 <h4>🏆 Scoring</h4>
                 <ul>
                     <li>Small aliens: 10 points</li>
@@ -90,7 +87,6 @@ class HelpManager {
                     <li>UFO: 50-300 points (random)</li>
                     <li>Level completion bonus: 1000 points</li>
                 </ul>
-                
                 <h4>💡 Tips & Tricks</h4>
                 <ul>
                     <li>Take your time - accuracy is more important than speed</li>
@@ -106,7 +102,8 @@ class HelpManager {
     getReportPlayerContent() {
         return `
             <h2>⚠️ Report Player</h2>
-            <p>Help us maintain a safe and respectful community. Use this form to report offensive behavior.</p>
+            <p>Help us maintain a safe and respectful community. Fill in the form and 
+               <strong>download</strong> the report file to send it to our moderation team.</p>
             
             <form class="help-form" id="reportPlayerForm">
                 <div class="help-form-group">
@@ -136,16 +133,19 @@ class HelpManager {
                 
                 <div class="help-form-group">
                     <label for="reportEvidence">Evidence (Optional)</label>
-                    <input type="text" id="reportEvidence" class="help-form-input" 
-                           placeholder="Link to screenshot or other evidence">
+                    <textarea id="reportEvidence" class="help-form-textarea" 
+                              placeholder="Describe any evidence (screenshots taken, date/time, etc.)"></textarea>
                 </div>
                 
-                <button type="submit" class="help-form-submit">Submit Report</button>
+                <button type="submit" class="help-form-submit">
+                    📥 Download Report File
+                </button>
             </form>
             
-            <p style="margin-top: 30px; color: #888; font-size: 0.9rem;">
-                <strong>Note:</strong> False reports may result in action against your account. 
-                All reports are reviewed by our moderation team.
+            <p class="report-note">
+                <strong>Note:</strong> The report will be downloaded as a <code>.txt</code> file. 
+                You can email it to <strong>support@arcad3x.com</strong> or upload it via the admin panel.
+                False reports may result in action against your account.
             </p>
         `;
     }
@@ -153,7 +153,7 @@ class HelpManager {
     getBugReportContent() {
         return `
             <h2>🐛 Report a Bug</h2>
-            <p>Found a bug? Help us improve ARCAD3X by reporting it here.</p>
+            <p>Found a bug? Fill in the form and <strong>download</strong> the bug report file.</p>
             
             <form class="help-form" id="bugReportForm">
                 <div class="help-form-group">
@@ -186,16 +186,19 @@ class HelpManager {
                 <div class="help-form-group">
                     <label for="bugSteps">Steps to Reproduce</label>
                     <textarea id="bugSteps" class="help-form-textarea" 
-                              placeholder="1. Go to...&#10;2. Click on...&#10;3. See error"></textarea>
+                              placeholder="1. Go to...\n2. Click on...\n3. See error"></textarea>
                 </div>
                 
                 <div class="help-form-group">
                     <label for="bugBrowser">Browser & OS</label>
                     <input type="text" id="bugBrowser" class="help-form-input" 
-                           placeholder="e.g., Chrome 120 on Windows 11">
+                           placeholder="e.g., Chrome 120 on Windows 11"
+                           value="">
                 </div>
                 
-                <button type="submit" class="help-form-submit">Submit Bug Report</button>
+                <button type="submit" class="help-form-submit">
+                    📥 Download Bug Report
+                </button>
             </form>
         `;
     }
@@ -203,45 +206,27 @@ class HelpManager {
     getSupportContent() {
         return `
             <h2>💝 Support ARCAD3X</h2>
-            
-            <div style="text-align: center; padding: 40px 20px;">
-                <div style="font-size: 4rem; margin-bottom: 20px;">🎮</div>
-                <h3 style="margin-bottom: 20px; color: #ffffff;">Thank You for Your Support!</h3>
-                <p style="font-size: 1.1rem; margin-bottom: 30px; color: #cccccc; line-height: 1.8;">
+            <div class="support-content-wrapper">
+                <div class="support-icon">🎮</div>
+                <h3>Thank You for Your Support!</h3>
+                <p class="support-description">
                     ARCAD3X is a passion project brought to life by dedicated developers. 
                     Your support helps us continue improving the platform and creating more amazing games.
                 </p>
-                
-                <div style="background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.2); 
-                            border-radius: 15px; padding: 30px; margin: 30px 0;">
-                    <h4 style="margin-bottom: 15px; color: #ffffff;">Ways to Support Us</h4>
-                    <ul style="list-style: none; padding: 0; text-align: left; max-width: 500px; margin: 0 auto;">
-                        <li style="margin: 15px 0; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                            ⭐ Play our games and share with friends
-                        </li>
-                        <li style="margin: 15px 0; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                            💬 Provide feedback and report bugs
-                        </li>
-                        <li style="margin: 15px 0; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                            📢 Follow us on social media
-                        </li>
-                        <li style="margin: 15px 0; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                            💰 Financial support (Coming Soon)
-                        </li>
+                <div class="support-ways">
+                    <h4>Ways to Support Us</h4>
+                    <ul class="support-list">
+                        <li>⭐ Play our games and share with friends</li>
+                        <li>💬 Provide feedback and report bugs</li>
+                        <li>📢 Follow us on social media</li>
+                        <li>💰 Financial support (Coming Soon)</li>
                     </ul>
                 </div>
-                
-                <div style="margin-top: 40px; padding: 20px; background: rgba(255, 165, 0, 0.1); 
-                            border: 1px solid rgba(255, 165, 0, 0.3); border-radius: 10px;">
-                    <p style="font-size: 1rem; color: #ffa500; margin: 0;">
-                        <strong>💳 Payment options (PayPal, Stripe) coming soon!</strong><br>
-                        <span style="font-size: 0.9rem; color: #888;">
-                            We're working on integrating secure payment methods to accept donations.
-                        </span>
-                    </p>
+                <div class="support-payment-notice">
+                    <p><strong>💳 Payment options (PayPal, Stripe) coming soon!</strong></p>
+                    <p class="payment-hint">We're working on integrating secure payment methods to accept donations.</p>
                 </div>
-                
-                <p style="margin-top: 30px; font-size: 0.9rem; color: #888;">
+                <p class="support-footer">
                     Created with ❤️ by Hugex & Schps<br>
                     © 2026 ARCAD3X - All rights reserved
                 </p>
@@ -255,59 +240,199 @@ class HelpManager {
             if (form) {
                 form.addEventListener('submit', (e) => {
                     e.preventDefault();
-                    this.handleReportSubmit(form);
+                    this._downloadReportFile(form);
                 });
             }
         } else if (type === 'bug') {
             const form = document.getElementById('bugReportForm');
             if (form) {
+                // Auto-fill browser info
+                const browserInput = document.getElementById('bugBrowser');
+                if (browserInput && !browserInput.value) {
+                    browserInput.value = this._detectBrowserInfo();
+                }
                 form.addEventListener('submit', (e) => {
                     e.preventDefault();
-                    this.handleBugSubmit(form);
+                    this._downloadBugReportFile(form);
                 });
             }
         }
     }
 
-    async handleReportSubmit(form) {
+    /**
+     * Generate and download a player report as a .txt file
+     */
+    _downloadReportFile(form) {
         const data = {
             username: document.getElementById('reportedUsername').value,
             reason: document.getElementById('reportReason').value,
             details: document.getElementById('reportDetails').value,
-            evidence: document.getElementById('reportEvidence').value
+            evidence: document.getElementById('reportEvidence')?.value || 'N/A',
         };
 
-        try {
-            // TODO: Implement API call when backend is ready
-            console.log('Report submitted:', data);
-            alert('Thank you for your report. Our moderation team will review it shortly.');
-            this.showHelpMenu();
-        } catch (error) {
-            console.error('Error submitting report:', error);
-            alert('Error submitting report. Please try again later.');
+        if (!data.username || !data.reason || !data.details) {
+            alert('Please fill in all required fields.');
+            return;
         }
+
+        const reporterName = window.facade?.getLocalUsername()
+            || window.api?.getLocalUsername()
+            || 'Anonymous';
+
+        const timestamp = new Date().toISOString();
+        const version = window.APP_CONFIG?.VERSION || '1.0.0';
+
+        const content = [
+            '═══════════════════════════════════════════',
+            '        ARCAD3X — PLAYER REPORT',
+            '═══════════════════════════════════════════',
+            '',
+            `Date:            ${timestamp}`,
+            `Platform Version: ${version}`,
+            `Reporter:        ${reporterName}`,
+            '',
+            '───────────────────────────────────────────',
+            '  REPORTED PLAYER',
+            '───────────────────────────────────────────',
+            `Username:        ${data.username}`,
+            `Reason:          ${data.reason.replace(/_/g, ' ')}`,
+            '',
+            '───────────────────────────────────────────',
+            '  DETAILS',
+            '───────────────────────────────────────────',
+            data.details,
+            '',
+            '───────────────────────────────────────────',
+            '  EVIDENCE',
+            '───────────────────────────────────────────',
+            data.evidence,
+            '',
+            '═══════════════════════════════════════════',
+            'Send this file to: support@arcad3x.com',
+            '═══════════════════════════════════════════',
+        ].join('\n');
+
+        this._triggerDownload(
+            content,
+            `report-${data.username}-${Date.now()}.txt`,
+            'text/plain'
+        );
+
+        alert('Report file downloaded! Please email it to support@arcad3x.com');
+        this.showHelpMenu();
     }
 
-    async handleBugSubmit(form) {
+    /**
+     * Generate and download a bug report as a .txt file
+     */
+    _downloadBugReportFile(form) {
         const data = {
             title: document.getElementById('bugTitle').value,
             category: document.getElementById('bugCategory').value,
             description: document.getElementById('bugDescription').value,
-            steps: document.getElementById('bugSteps').value,
-            browser: document.getElementById('bugBrowser').value
+            steps: document.getElementById('bugSteps')?.value || 'N/A',
+            browser: document.getElementById('bugBrowser')?.value || 'Unknown',
         };
 
-        try {
-            // TODO: Implement API call when backend is ready
-            console.log('Bug report submitted:', data);
-            alert('Thank you for reporting this bug! We\'ll investigate it as soon as possible.');
-            this.showHelpMenu();
-        } catch (error) {
-            console.error('Error submitting bug report:', error);
-            alert('Error submitting bug report. Please try again later.');
+        if (!data.title || !data.category || !data.description) {
+            alert('Please fill in all required fields.');
+            return;
         }
+
+        const reporterName = window.facade?.getLocalUsername()
+            || window.api?.getLocalUsername()
+            || 'Anonymous';
+
+        const timestamp = new Date().toISOString();
+        const version = window.APP_CONFIG?.VERSION || '1.0.0';
+
+        const content = [
+            '═══════════════════════════════════════════',
+            '        ARCAD3X — BUG REPORT',
+            '═══════════════════════════════════════════',
+            '',
+            `Date:            ${timestamp}`,
+            `Platform Version: ${version}`,
+            `Reporter:        ${reporterName}`,
+            `Browser/OS:      ${data.browser}`,
+            '',
+            '───────────────────────────────────────────',
+            '  BUG DETAILS',
+            '───────────────────────────────────────────',
+            `Title:           ${data.title}`,
+            `Category:        ${data.category}`,
+            '',
+            '───────────────────────────────────────────',
+            '  DESCRIPTION',
+            '───────────────────────────────────────────',
+            data.description,
+            '',
+            '───────────────────────────────────────────',
+            '  STEPS TO REPRODUCE',
+            '───────────────────────────────────────────',
+            data.steps,
+            '',
+            '═══════════════════════════════════════════',
+            'Send this file to: support@arcad3x.com',
+            '═══════════════════════════════════════════',
+        ].join('\n');
+
+        this._triggerDownload(
+            content,
+            `bug-report-${Date.now()}.txt`,
+            'text/plain'
+        );
+
+        alert('Bug report downloaded! Thank you for helping us improve ARCAD3X.');
+        this.showHelpMenu();
+    }
+
+    /**
+     * Cross-browser file download trigger
+     */
+    _triggerDownload(content, filename, mimeType) {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+    }
+
+    /**
+     * Detect browser and OS info for bug reports
+     */
+    _detectBrowserInfo() {
+        const ua = navigator.userAgent;
+        let browser = 'Unknown Browser';
+        let os = 'Unknown OS';
+
+        // Detect browser
+        if (ua.includes('Firefox/')) browser = 'Firefox ' + ua.split('Firefox/')[1].split(' ')[0];
+        else if (ua.includes('Edg/')) browser = 'Edge ' + ua.split('Edg/')[1].split(' ')[0];
+        else if (ua.includes('Chrome/')) browser = 'Chrome ' + ua.split('Chrome/')[1].split(' ')[0];
+        else if (ua.includes('Safari/') && !ua.includes('Chrome')) browser = 'Safari ' + ua.split('Version/')[1]?.split(' ')[0] || '';
+        else if (ua.includes('MSIE') || ua.includes('Trident/')) browser = 'Internet Explorer';
+
+        // Detect OS
+        if (ua.includes('Windows NT 10')) os = 'Windows 10/11';
+        else if (ua.includes('Windows')) os = 'Windows';
+        else if (ua.includes('Mac OS X')) os = 'macOS ' + ua.split('Mac OS X ')[1]?.split(')')[0]?.replace(/_/g, '.') || '';
+        else if (ua.includes('Linux')) os = 'Linux';
+        else if (ua.includes('Android')) os = 'Android';
+        else if (ua.includes('iOS') || ua.includes('iPhone')) os = 'iOS';
+
+        return `${browser} on ${os}`;
     }
 }
 
-// Export for use in main app
 window.HelpManager = HelpManager;

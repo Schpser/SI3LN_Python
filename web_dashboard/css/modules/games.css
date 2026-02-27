@@ -40,7 +40,7 @@
 
 .game-overlay {
     position: absolute;
-    inset: 0;
+    top: 0; right: 0; bottom: 0; left: 0;
     background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
@@ -113,7 +113,7 @@
 /* Fullscreen Game Page */
 .fullscreen-page {
     position: fixed;
-    inset: 0;
+    top: 0; right: 0; bottom: 0; left: 0;
     background: #000000;
     z-index: 2000;
 }
@@ -212,12 +212,18 @@
 
 .game-navigation {
     position: absolute;
-    bottom: 40px;
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    display: flex;
+    display: none;          /* hidden by default — only show when multiple games available */
     gap: 20px;
     z-index: 2001;
+    pointer-events: auto;
+}
+
+/* Show navigation only when there are multiple playable games */
+.game-navigation.multi-game {
+    display: flex;
 }
 
 .game-nav-btn {
@@ -256,7 +262,7 @@
 
 .game-loading {
     position: absolute;
-    inset: 0;
+    top: 0; right: 0; bottom: 0; left: 0;
     background: rgba(0, 0, 0, 0.9);
     display: flex;
     flex-direction: column;
@@ -314,4 +320,76 @@
     .games-grid {
         grid-template-columns: 1fr;
     }
+}
+/* ===== RESPONSIVE GAME WINDOW ===== */
+
+/* When game page has a custom background */
+.fullscreen-page[style*="background"] {
+    transition: background-color 0.4s ease;
+}
+
+/* Responsive game iframe — keep aspect ratio and center */
+.game-fullscreen-container {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.game-iframe {
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+    max-height: calc(100vh - 60px);
+    border: none;
+    display: block;
+    background: #000;
+}
+
+/* On smaller screens, make controls bar more compact */
+@media (max-width: 600px) {
+    .game-controls-bar {
+        height: 48px;
+        padding: 0 10px;
+    }
+
+    .game-fullscreen-container {
+        top: 48px;
+    }
+
+    .game-title-display {
+        font-size: 1rem;
+    }
+
+    .control-text {
+        display: none; /* icon-only on mobile */
+    }
+
+    .game-control-btn {
+        padding: 6px 10px;
+    }
+
+    .guest-info-banner {
+        top: 48px;
+        font-size: 0.8rem;
+        padding: 8px 14px;
+    }
+}
+
+/* Fullscreen mode overrides (when browser enters fullscreen) */
+.game-fullscreen-container:-webkit-full-screen {
+    top: 0;
+}
+
+.game-fullscreen-container:-moz-full-screen {
+    top: 0;
+}
+
+.game-fullscreen-container:fullscreen {
+    top: 0;
 }

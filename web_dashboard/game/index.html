@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="darkreader-lock">
+  <meta name="color-scheme" content="only light">
   <title>SI3LN – Play</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -11,7 +14,7 @@
     /* full-viewport iframe */
     #pygbag-frame {
       position: absolute;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       width: 100%;
       height: 100%;
       border: none;
@@ -21,7 +24,7 @@
     /* loading overlay shown until iframe fires its first load event */
     #overlay {
       position: absolute;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -87,13 +90,28 @@
 </div>
 
 <script>
-// ── 1. Pull JWT from parent SPA or own localStorage ──────────────────────────
+// ── 0. Exit game helper (used in guest banner onclick) ───────────────────────
+function exitGame() {
+    try {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: 'exitGame' }, '*');
+        } else {
+            window.location.href = '/';
+        }
+    } catch(e) { window.location.href = '/'; }
+}
+
+// ── 1. Pull JWT from localStorage (shared with parent SPA, same origin) ───────
+var TOKEN_KEY = 'SI3LN_SESSION';  // matches APP_CONFIG.TOKEN_KEY
+var LEGACY_KEY = 'access_token';
 var token = null;
 try {
-  token = (window.parent && window.parent !== window)
-    ? window.parent.localStorage.getItem('access_token')
-    : localStorage.getItem('access_token');
-} catch(e) {}
+  // Same-origin sandboxed iframes share localStorage directly.
+  // No need to access window.parent — it can throw under COEP / sandbox.
+  token = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_KEY);
+} catch(e) {
+  console.warn('[game/index] localStorage read failed:', e);
+}
 
 if (token && token !== 'null') {
   // Store in localStorage so the same-origin iframe can read it

@@ -1,4 +1,8 @@
-// app.js - Main application controller (refactored)
+// app.js - Main application controller (v2 — refactored with facade + search)
+// =============================================================================
+
+'use strict';
+
 class AppManager {
     constructor() {
         // DOM elements
@@ -11,12 +15,22 @@ class AppManager {
         this.userName = document.getElementById('userName');
         this.playGameLink = document.getElementById('playGameLink');
         
+        // Create the secure facade service (wraps the raw API client)
+        if (typeof ApiFacadeService !== 'undefined' && window._rawApiClient) {
+            window.facade = new ApiFacadeService(window._rawApiClient);
+        }
+        
         // Initialize modules
         this.profileManager = new ProfileManager(window.api);
         this.gamesManager = new GamesManager();
         this.authManager = new AuthManager(window.api);
         this.helpManager = new HelpManager();
         this.mobileManager = new MobileManager();
+        
+        // Search service
+        if (typeof SearchService !== 'undefined') {
+            this.searchService = new SearchService(window.facade || window.api);
+        }
         
         this.init();
     }
@@ -30,6 +44,7 @@ class AppManager {
         this.initNavigationHandlers();
         this.initLogoHandlers();
         this.initLanguageSwitcher();
+        this.initSearch();
         
         // Initialize mobile and touch support
         this.mobileManager.init();
@@ -46,41 +61,43 @@ class AppManager {
         // Initialize signup validation
         this.authManager.initSignupValidation();
         
+        // Display version in console (safe)
+        if (window.APP_CONFIG) {
+            if (window.AppLogger) window.AppLogger.log(
+                `${window.APP_CONFIG.APP_NAME} v${window.APP_CONFIG.VERSION}`
+            );
+        }
+        
         // Check auth and load initial data
         this.checkAuth();
         this.loadHomeData();
     }
     
     initMenuHandlers() {
-        // Toggle menu avec le triangle PLAY
         this.menuTrigger?.addEventListener('click', () => {
             this.menuDropdown.classList.toggle('visible');
         });
         
-        // Fermer le menu si on clique ailleurs
         document.addEventListener('click', (e) => {
-            if (!this.menuTrigger.contains(e.target) && !this.menuDropdown.contains(e.target)) {
-                this.menuDropdown.classList.remove('visible');
+            if (!this.menuTrigger?.contains(e.target) && !this.menuDropdown?.contains(e.target)) {
+                this.menuDropdown?.classList.remove('visible');
             }
         });
         
-        // Navigation dans le menu
         this.menuItems.forEach(item => {
             item.addEventListener('click', () => {
                 const page = item.dataset.page;
                 if (page) {
                     this.navigateTo(page);
-                    this.menuDropdown.classList.remove('visible');
+                    this.menuDropdown?.classList.remove('visible');
                 }
             });
         });
     }
     
     initAuthHandlers() {
-        // Logout
         this.logoutBtn?.addEventListener('click', () => this.logout());
         
-        // Top bar login link
         const topLoginLink = document.getElementById('topLoginLink');
         if (topLoginLink) {
             topLoginLink.addEventListener('click', (e) => {
@@ -91,13 +108,7 @@ class AppManager {
     }
     
     initNavigationHandlers() {
-        // Lien vers le jeu
-        this.playGameLink?.addEventListener('click', (e) => {
-            e.preventDefault();
-            this.navigateTo('games');
-        });
-        
-        // "Already have an account? Login" link on create-account page → go to login
+        // "Already have an account? Login" link
         const loginRedirect = document.getElementById('loginRedirect');
         if (loginRedirect) {
             loginRedirect.addEventListener('click', (e) => {
@@ -106,7 +117,7 @@ class AppManager {
             });
         }
         
-        // "Create account" link on login page → go to create-account (also handled in auth.js)
+        // "Create account" link on login page
         const signupLink = document.getElementById('signupLink');
         if (signupLink && !signupLink._navHandled) {
             signupLink._navHandled = true;
@@ -118,33 +129,27 @@ class AppManager {
     }
     
     initLogoHandlers() {
-        // Page logo handlers (ARCAD3X headers on pages)
-        const pageLogos = document.querySelectorAll('.page-logo');
-        pageLogos.forEach(logo => {
+        document.querySelectorAll('.page-logo').forEach(logo => {
             logo.addEventListener('click', (e) => {
                 e.preventDefault();
-                const targetPage = logo.getAttribute('data-page') || 'home';
-                this.navigateTo(targetPage);
+                this.navigateTo(logo.getAttribute('data-page') || 'home');
             });
         });
         
-        // Sidebar menu logo (main ARCAD3X logo)
         const menuLogo = document.querySelector('.menu-logo');
         if (menuLogo) {
             menuLogo.style.cursor = 'pointer';
             menuLogo.addEventListener('click', () => {
                 this.navigateTo('home');
-                this.menuDropdown.classList.remove('visible');
+                this.menuDropdown?.classList.remove('visible');
             });
         }
 
-        // Top-bar site title link (ARCAD3X in top bar)
         const topBarTitle = document.querySelector('.top-bar-title a[data-page]');
         if (topBarTitle) {
             topBarTitle.addEventListener('click', (e) => {
                 e.preventDefault();
-                const targetPage = topBarTitle.getAttribute('data-page') || 'home';
-                this.navigateTo(targetPage);
+                this.navigateTo(topBarTitle.getAttribute('data-page') || 'home');
             });
         }
     }
@@ -155,28 +160,23 @@ class AppManager {
         const languageOptions = document.querySelectorAll('.language-option');
         const currentLanguageDisplay = document.getElementById('currentLanguage');
         
-        // Update current language display
         const updateLanguageDisplay = () => {
             const currentLang = window.i18n.getLanguage().toUpperCase();
             if (currentLanguageDisplay) {
                 currentLanguageDisplay.textContent = currentLang;
             }
-            
-            // Update active state
             languageOptions.forEach(option => {
                 const lang = option.getAttribute('data-lang');
-                if (lang === window.i18n.getLanguage()) {
-                    option.classList.add('active');
-                } else {
-                    option.classList.remove('active');
-                }
+                option.classList.toggle('active', lang === window.i18n.getLanguage());
             });
         };
         
-        // Toggle dropdown
+        // Toggle dropdown — remove .hidden (if present from HTML), toggle .visible
         if (languageBtn) {
             languageBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                // Ensure .hidden doesn't block the dropdown
+                languageDropdown?.classList.remove('hidden');
                 languageDropdown?.classList.toggle('visible');
             });
         }
@@ -190,11 +190,8 @@ class AppManager {
                     updateLanguageDisplay();
                     languageDropdown?.classList.remove('visible');
                     
-                    // Add animation
                     languageBtn?.classList.add('changing');
-                    setTimeout(() => {
-                        languageBtn?.classList.remove('changing');
-                    }, 300);
+                    setTimeout(() => languageBtn?.classList.remove('changing'), 300);
                 }
             });
         });
@@ -206,25 +203,156 @@ class AppManager {
             }
         });
         
-        // Initial display
         updateLanguageDisplay();
     }
 
+    // ── Search ────────────────────────────────────────────────────────────────
+
+    initSearch() {
+        const searchInput = document.querySelector('.search-input');
+        const searchButton = document.querySelector('.search-button');
+        
+        if (!searchInput) return;
+        
+        // Create search results dropdown
+        const searchContainer = searchInput.closest('.search-container');
+        let resultsDropdown = document.getElementById('searchResults');
+        if (!resultsDropdown && searchContainer) {
+            resultsDropdown = document.createElement('div');
+            resultsDropdown.id = 'searchResults';
+            resultsDropdown.className = 'search-results-dropdown';
+            searchContainer.appendChild(resultsDropdown);
+        }
+        
+        // Live search on input
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value.trim();
+            if (query.length < 2) {
+                this._hideSearchResults();
+                return;
+            }
+            
+            if (this.searchService) {
+                this.searchService.debounceSearch(query, (results) => {
+                    this._renderSearchResults(results, resultsDropdown);
+                });
+            }
+        });
+        
+        // Search button click
+        searchButton?.addEventListener('click', () => {
+            const query = searchInput.value.trim();
+            if (query.length >= 2 && this.searchService) {
+                this.searchService.search(query).then(results => {
+                    this._renderSearchResults(results, resultsDropdown);
+                });
+            }
+        });
+        
+        // Enter key
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchButton?.click();
+            }
+            if (e.key === 'Escape') {
+                this._hideSearchResults();
+                searchInput.blur();
+            }
+        });
+        
+        // Close results when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchContainer?.contains(e.target)) {
+                this._hideSearchResults();
+            }
+        });
+    }
+
+    _renderSearchResults(results, dropdown) {
+        if (!dropdown) return;
+        
+        if (!results || results.length === 0) {
+            dropdown.innerHTML = '<div class="search-no-results">No results found</div>';
+            dropdown.classList.add('visible');
+            return;
+        }
+        
+        dropdown.innerHTML = results.map(result => `
+            <div class="search-result-item" data-type="${result.type}" data-id="${result.id}" 
+                 data-action="${result.action || ''}" data-section="${result.section || ''}">
+                <span class="search-result-icon">${result.icon}</span>
+                <div class="search-result-info">
+                    <span class="search-result-title">${this._escapeHtml(result.title)}</span>
+                    <span class="search-result-type">${result.description || result.type}</span>
+                </div>
+            </div>
+        `).join('');
+        
+        dropdown.classList.add('visible');
+        
+        // Handle clicks on results
+        dropdown.querySelectorAll('.search-result-item').forEach(item => {
+            item.addEventListener('click', () => {
+                this._handleSearchResultClick(item);
+                this._hideSearchResults();
+                document.querySelector('.search-input').value = '';
+            });
+        });
+    }
+
+    _handleSearchResultClick(item) {
+        const type = item.dataset.type;
+        const id = item.dataset.id;
+        const action = item.dataset.action;
+        const section = item.dataset.section;
+        
+        switch(action) {
+            case 'launch-game':
+                this.gamesManager.launchGame(id);
+                break;
+            case 'show-help':
+                this.navigateTo('help');
+                setTimeout(() => this.helpManager.showHelpDetail(section), 100);
+                break;
+            case 'show-profile':
+                this.navigateTo('profile');
+                break;
+            default:
+                if (type === 'game') this.navigateTo('games');
+                else if (type === 'help') this.navigateTo('help');
+                else if (type === 'player') this.navigateTo('profile');
+                break;
+        }
+    }
+
+    _hideSearchResults() {
+        const dropdown = document.getElementById('searchResults');
+        if (dropdown) {
+            dropdown.classList.remove('visible');
+            dropdown.innerHTML = '';
+        }
+    }
+
+    _escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ── Navigation ────────────────────────────────────────────────────────────
+
     navigateTo(pageName) {
-        // Cacher toutes les pages
         this.pages.forEach(page => page.classList.add('hidden'));
         
-        // Afficher la bonne page
         const targetPage = document.getElementById(`${pageName}-page`);
         if (targetPage) {
             targetPage.classList.remove('hidden');
             this.loadPageData(pageName);
         } else {
-            // Par défaut, retour à l'accueil
             document.getElementById('home-page')?.classList.remove('hidden');
         }
         
-        // Pages spéciales - gestion du mode plein écran
         if (pageName === 'game-play') {
             document.body.style.overflow = 'hidden';
         } else {
@@ -253,9 +381,13 @@ class AppManager {
     }
     
     async loadHomeData() {
-        // Load leaderboard — independent of profile, so failures don't cascade
+        // Load leaderboard
         try {
-            const leaderboardData = await window.api.getLeaderboard(3);
+            const facade = window.facade;
+            const leaderboardData = facade
+                ? await facade.getLeaderboard(3)
+                : await window.api.getLeaderboard(3);
+            
             const leaderboardDiv = document.getElementById('leaderboard');
             if (Array.isArray(leaderboardData) && leaderboardDiv) {
                 if (leaderboardData.length === 0) {
@@ -264,67 +396,64 @@ class AppManager {
                     leaderboardDiv.innerHTML = leaderboardData
                         .map((entry, i) => `<div class="lb-entry">
                             <span class="lb-rank">#${i + 1}</span>
-                            <span class="lb-name">${entry.player_username}</span>
+                            <span class="lb-name">${entry.player_username || 'Unknown'}</span>
                             <span class="lb-score">${entry.score} pts</span>
                         </div>`)
                         .join('');
                 }
             }
         } catch (error) {
-            console.error('Error loading leaderboard:', error);
             const leaderboardDiv = document.getElementById('leaderboard');
             if (leaderboardDiv) leaderboardDiv.innerHTML = '<p>Could not load leaderboard.</p>';
         }
 
-        // Show welcome message if logged in (independent try/catch)
-        const token = localStorage.getItem('access_token');
-        if (token) {
+        // Show welcome message if logged in
+        const facade = window.facade;
+        const tokenKey = window.APP_CONFIG?.TOKEN_KEY || 'access_token';
+        const isAuth = facade ? facade.isAuthenticated() : !!localStorage.getItem(tokenKey);
+        if (isAuth) {
             try {
-                const profileData = await window.api.getCurrentPlayer();
+                const profileData = facade
+                    ? await facade.getCurrentPlayer()
+                    : await window.api.getCurrentPlayer();
                 const profileDiv = document.getElementById('profile');
                 if (profileDiv && profileData) {
-                    profileDiv.innerHTML = `Welcome, ${profileData.username}!`;
+                    profileDiv.innerHTML = `Welcome, ${profileData.username || 'Player'}!`;
                 }
             } catch (error) {
-                console.error('Error loading profile:', error);
                 const profileDiv = document.getElementById('profile');
                 if (profileDiv) {
-                    const username = window.api?.getLocalUsername?.();
+                    const username = facade?.getLocalUsername() || window.api?.getLocalUsername();
                     profileDiv.innerHTML = username ? `Welcome, ${username}!` : 'Please log in';
                 }
             }
         }
     }
 
-    loadHelp() {
-        document.getElementById('helpContent').innerHTML = `
-            <div class="help-section">
-                <h2>Comment jouer ?</h2>
-                <p>Documentation à venir...</p>
-            </div>
-        `;
-    }
-    
     loadAbout() {
-        document.getElementById('aboutContent').innerHTML = `
-            <div class="about-section">
-                <h2>À propos de nous</h2>
-                <p>Projet SI3LN par Hugex & Schps...</p>
-                <p>FullStack gaming platform</p>
-            </div>
-        `;
+        const el = document.getElementById('aboutContent');
+        if (el) {
+            const version = window.APP_CONFIG?.VERSION || '1.0.0';
+            el.innerHTML = `
+                <div class="about-section">
+                    <h2>À propos de nous</h2>
+                    <p>Projet SI3LN par Hugex & Schps...</p>
+                    <p>FullStack gaming platform</p>
+                    <p class="version-info">Version ${version}</p>
+                </div>
+            `;
+        }
     }
     
     async loadSettings() {
-        // Only allow admin / staff
-        const role = window.api?.getLocalRole() ?? 'guest';
+        const role = window.facade?.getLocalRole() || window.api?.getLocalRole() || 'guest';
         if (role !== 'admin') {
             this.navigateTo('home');
             return;
         }
 
         try {
-            const stats = await window.api.getStats().catch(() => null);
+            const stats = await (window.facade || window.api).getStats().catch(() => null);
             const statsHtml = stats
                 ? `<ul>
                     <li>Players: <b>${stats.total_players}</b></li>
@@ -343,29 +472,34 @@ class AppManager {
                 </div>
             `;
         } catch (error) {
-            console.error('Error loading settings:', error);
+            if (window.AppLogger) window.AppLogger.error('Settings load error');
         }
     }
 
     checkAuth() {
-        const token = localStorage.getItem('access_token');
-        const isLoggedIn = !!token;
-        const username = isLoggedIn ? (window.api?.getLocalUsername?.() ?? '') : '';
+        const facade = window.facade;
+        const tokenKey = window.APP_CONFIG?.TOKEN_KEY || 'access_token';
+        const isLoggedIn = facade ? facade.isAuthenticated() : !!localStorage.getItem(tokenKey);
+        const username = isLoggedIn
+            ? (facade?.getLocalUsername() || window.api?.getLocalUsername() || '')
+            : '';
         this.authManager.updateAuthUI(isLoggedIn, username);
     }
 
     logout() {
-        localStorage.removeItem('access_token');
+        if (window.facade) {
+            window.facade.logout();
+        } else {
+            localStorage.removeItem(window.APP_CONFIG?.TOKEN_KEY || 'access_token');
+            localStorage.removeItem(window.APP_CONFIG?.LEGACY_TOKEN_KEY || 'SI3LN_SESSION');
+        }
         this.authManager.updateAuthUI(false);
         this.navigateTo('home');
     }
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
-// window.api is already set by api.js (loaded before this file).
-// We only need to create AppManager here.
 document.addEventListener('DOMContentLoaded', () => {
-    // Ensure api client exists (safety – api.js loads first anyway)
     if (!window.api) { window.api = new APIClient(); }
     window.app = new AppManager();
 });

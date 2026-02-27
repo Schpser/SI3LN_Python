@@ -47,6 +47,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'game.facade.SecurityFacadeMiddleware',  # API response sanitization
 ]
 
 ROOT_URLCONF = 'si3ln_api.urls'

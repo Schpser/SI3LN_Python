@@ -21,7 +21,7 @@ class MobileManager {
             this.initViewportMeta();
             this.preventDefaultBehaviors();
             this.initPullToRefresh();
-            console.log('Mobile mode activated');
+            if (window.AppLogger) window.AppLogger.log('Mobile mode activated');
         }
     }
 
@@ -165,7 +165,7 @@ class MobileManager {
         }
 
         // Could show context menu or additional options
-        console.log('Long press detected on:', element);
+        if (window.AppLogger) window.AppLogger.log('Long press detected');
     }
 
     addTouchFeedback() {
@@ -249,7 +249,7 @@ class MobileManager {
             const currentPage = document.querySelector('.page:not(.hidden)');
             if (currentPage && currentPage.id) {
                 const pageName = currentPage.id.replace('-page', '');
-                console.log('Refreshing page:', pageName);
+                if (window.AppLogger) window.AppLogger.log('Refreshing page');
                 
                 // Add visual feedback
                 if (navigator.vibrate) {

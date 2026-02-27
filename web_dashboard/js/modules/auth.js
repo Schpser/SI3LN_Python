@@ -47,15 +47,22 @@ class AuthManager {
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Creating…'; }
 
         try {
-            const result = await this.api.signup({ username, email, password });
-            localStorage.setItem('access_token', result.token);
+            // Use facade if available (doesn't expose token)
+            const facade = window.facade;
+            if (facade) {
+                await facade.signup({ username, email, password });
+            } else {
+                const result = await this.api.signup({ username, email, password });
+                const tokenKey = window.APP_CONFIG?.TOKEN_KEY || 'access_token';
+                localStorage.setItem(tokenKey, result.token);
+            }
             if (window.app) {
                 window.app.navigateTo('home');
                 window.app.checkAuth();
                 window.app.loadHomeData();
             }
         } catch (err) {
-            console.error('Signup error:', err);
+            if (window.AppLogger) window.AppLogger.error('Signup failed');
             alert('Registration failed. Username or email may already be taken.');
             if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Create my account'; }
         }
@@ -86,7 +93,7 @@ class AuthManager {
             }
             
         } catch (error) {
-            console.error('Login error:', error);
+            if (window.AppLogger) window.AppLogger.error('Login failed');
             alert('Login failed. Please check your credentials.');
             
             const submitBtn = document.getElementById('loginSubmitBtn');
@@ -99,22 +106,33 @@ class AuthManager {
 
     async login(username, password) {
         try {
-            const result = await this.api.login(username, password);
-            localStorage.setItem('access_token', result.token);
+            const facade = window.facade;
+            if (facade) {
+                await facade.login(username, password);
+            } else {
+                const result = await this.api.login(username, password);
+                const tokenKey = window.APP_CONFIG?.TOKEN_KEY || 'access_token';
+                localStorage.setItem(tokenKey, result.token);
+            }
             return true;
         } catch (error) {
-            console.error('Error logging in:', error);
+            if (window.AppLogger) window.AppLogger.error('Login failed');
             throw error;
         }
     }
 
     logout() {
-        localStorage.removeItem('access_token');
+        if (window.facade) {
+            window.facade.logout();
+        } else {
+            localStorage.removeItem(window.APP_CONFIG?.TOKEN_KEY || 'access_token');
+        }
         this.applyRoleUI('guest');
     }
 
     /** Return the current role decoded from the JWT: 'admin' | 'player' | 'guest' */
     getRole() {
+        if (window.facade) return window.facade.getLocalRole();
         return window.api ? window.api.getLocalRole() : 'guest';
     }
 
@@ -154,8 +172,10 @@ class AuthManager {
     }
 
     checkAuth() {
-        const token = localStorage.getItem('access_token');
-        return !!token;
+        const facade = window.facade;
+        if (facade) return facade.isAuthenticated();
+        const tokenKey = window.APP_CONFIG?.TOKEN_KEY || 'access_token';
+        return !!localStorage.getItem(tokenKey);
     }
 
     updateAuthUI(isLoggedIn, username = '') {
@@ -167,7 +187,10 @@ class AuthManager {
             topBarAuth?.classList.add('hidden');
             userInfo?.classList.remove('hidden');
             if (userName) {
-                const displayName = username || window.api?.getLocalUsername() || 'Player';
+                const displayName = username
+                    || window.facade?.getLocalUsername()
+                    || window.api?.getLocalUsername()
+                    || 'Player';
                 userName.textContent = displayName;
             }
         } else {

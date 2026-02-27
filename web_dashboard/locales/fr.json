@@ -1,11 +1,118 @@
 {
-    "welcome": "Bienvenue",
-    "play": "Jouer",
-    "profile": "Profil",
-    "games": "Jeux",
-    "help": "Aide",
-    "about": "À propos",
-    "login": "Connexion",
-    "logout": "Déconnexion",
-    "create_account": "Créer un compte"
+    "menu": {
+        "home": "Accueil",
+        "profile": "Profil",
+        "games": "Jeux",
+        "help": "Aide",
+        "settings": "Paramètres",
+        "aboutUs": "À propos",
+        "logout": "Déconnexion"
+    },
+    "topBar": {
+        "search": "Rechercher...",
+        "loginSignup": "🔐 Connexion / Inscription",
+        "logout": "Déconnexion"
+    },
+    "home": {
+        "welcome": "Bienvenue dans",
+        "subtitle": "Plateforme de jeux",
+        "playNow": "Jouer maintenant →",
+        "leaderboard": "Classement",
+        "playerProfile": "Profil Joueur",
+        "loading": "Chargement..."
+    },
+    "login": {
+        "title": "🔐 Connexion à ARCAD3X",
+        "username": "Nom d'utilisateur",
+        "password": "Mot de passe",
+        "usernamePlaceholder": "Votre nom d'utilisateur",
+        "passwordPlaceholder": "********",
+        "rememberMe": "Se souvenir de moi",
+        "loginButton": "Se connecter",
+        "forgotPassword": "Mot de passe oublié ?",
+        "createAccount": "Créer un compte"
+    },
+    "signup": {
+        "title": "📝 Créer un compte",
+        "email": "Email",
+        "emailPlaceholder": "votre@email.com",
+        "pseudo": "Pseudo",
+        "pseudoPlaceholder": "Choisissez votre nom d'utilisateur",
+        "pseudoWarning": "⚠️ Ce pseudo ne pourra pas être changé plus tard (seuls les administrateurs pourront le modifier)",
+        "password": "Mot de passe",
+        "confirmPassword": "Confirmer le mot de passe",
+        "passwordPlaceholder": "********",
+        "reqLength": "✗ 8 caractères min",
+        "reqNumber": "✗ Au moins 1 chiffre",
+        "reqUpper": "✗ Au moins 1 majuscule",
+        "preferredLanguage": "Langue préférée",
+        "acceptTerms": "J'accepte les",
+        "termsOfService": "conditions d'utilisation",
+        "createButton": "Créer mon compte",
+        "alreadyHaveAccount": "Déjà un compte ?",
+        "loginLink": "Connectez-vous"
+    },
+    "profile": {
+        "editProfile": "Modifier le profil",
+        "backgroundColor": "🎨 Couleur de fond",
+        "profilePicture": "📸 Photo de profil (max 5MB)",
+        "chooseImage": "Choisir une image",
+        "imageHint": "PNG, JPG, GIF jusqu'à 5MB",
+        "bio": "📝 Biographie",
+        "bioPlaceholder": "Parlez-nous de vous...",
+        "privacy": "🔒 Confidentialité",
+        "showScores": "Afficher mes scores sur mon profil",
+        "favoriteGames": "⭐ Jeux favoris",
+        "multiSelectHint": "Maintenez Ctrl/Cmd pour sélectionner plusieurs",
+        "saveChanges": "Enregistrer les modifications",
+        "cancel": "Annuler"
+    },
+    "games": {
+        "title": "Jeux",
+        "comingSoon": "Bientôt disponible",
+        "guestWarning": "⚠️ Vous jouez en tant qu'invité. Votre progression ne sera pas sauvegardée.",
+        "loginToSave": "Connexion",
+        "registerToSave": "Inscription",
+        "toSaveProgress": "pour sauvegarder votre progression",
+        "fullscreen": "Plein écran",
+        "exitFullscreen": "Quitter le plein écran",
+        "previousGame": "◀ Jeu Précédent",
+        "nextGame": "Jeu Suivant ▶"
+    },
+    "help": {
+        "title": "Centre d'aide",
+        "tutorials": "Tutoriels de jeu",
+        "tutorialsDesc": "Apprenez à jouer à nos jeux",
+        "viewTutorials": "Voir les tutoriels",
+        "reportPlayer": "Signaler un joueur",
+        "reportPlayerDesc": "Signaler un comportement inapproprié",
+        "reportPlayerBtn": "Signaler un joueur",
+        "reportBug": "Signaler un bug",
+        "reportBugDesc": "Aidez-nous à nous améliorer en signalant des problèmes",
+        "reportBugBtn": "Signaler un bug",
+        "support": "Nous soutenir",
+        "supportDesc": "Soutenez le développement d'ARCAD3X",
+        "supportBtn": "Soutenir le projet",
+        "backToMenu": "← Retour au menu d'aide"
+    },
+    "settings": {
+        "title": "⚙️ Paramètres",
+        "language": "Langue",
+        "changeLanguage": "Changer de langue"
+    },
+    "about": {
+        "title": "ℹ️ À propos de nous"
+    },
+    "common": {
+        "close": "Fermer",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "submit": "Soumettre",
+        "back": "Retour",
+        "next": "Suivant",
+        "previous": "Précédent",
+        "loading": "Chargement...",
+        "error": "Erreur",
+        "success": "Succès"
+    }
 }

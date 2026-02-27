@@ -1,36 +1,31 @@
-// games.js - Games management module
+// games.js - Games management module (v2 — fixed launch + responsive + bg color)
+// ================================================================================
+
+'use strict';
+
 class GamesManager {
     constructor() {
         this.currentGameId = null;
         this.currentGameIndex = 0;
         this.gameSession = null;
         this.isFullscreen = false;
-        this.games = [
-            {
-                id: 'si3ln',
-                name: 'SI3LN',
-                description: 'Space Invaders III Last Night',
-                url: 'game/index.html',  // Placeholder - see GAME_INTEGRATION.md
-                thumbnail: 'assets/worlds/home_page.jpg'
-            },
-            {
-                id: 'game2',
-                name: 'Space Warriors',
-                description: 'Coming Soon',
-                comingSoon: true
-            },
-            {
-                id: 'game3',
-                name: 'Fantasy Quest',
-                description: 'Coming Soon',
-                comingSoon: true
-            }
-        ];
+        // Use GameEntity catalog if available, else inline fallback
+        this.games = (typeof GameEntity !== 'undefined')
+            ? GameEntity.catalog()
+            : [
+                { id: 'si3ln', name: 'SI3LN', description: 'Space Invaders III Last Night',
+                  url: 'game/index.html', thumbnail: 'assets/worlds/home_page.jpg',
+                  homepageBg: '#000428', homepageImage: 'assets/worlds/home_page.jpg',
+                  isPlayable: true, comingSoon: false },
+                { id: 'game2', name: 'Space Warriors', description: 'Coming Soon',
+                  comingSoon: true, isPlayable: false },
+                { id: 'game3', name: 'Fantasy Quest', description: 'Coming Soon',
+                  comingSoon: true, isPlayable: false },
+              ];
     }
 
     loadGames() {
-        // Games are loaded via HTML, this is for dynamic updates
-        console.log('Games page loaded');
+        // Games are rendered via HTML; this hook is for future dynamic loading
     }
 
     async launchGame(gameId) {
@@ -47,53 +42,69 @@ class GamesManager {
             window.app.navigateTo('game-play');
         }
         
+        // Apply game-specific background color behind the iframe
+        this._applyGameBackground(game);
+        
         // Show loading
         const loadingElement = document.getElementById('gameLoading');
-        if (loadingElement) {
-            loadingElement.style.display = 'flex';
-        }
+        if (loadingElement) loadingElement.style.display = 'flex';
         
-        try {
-            // Check if user is logged in
-            const token = localStorage.getItem('access_token');
-            const isGuest = !token;
-            
-            if (isGuest) {
-                // Guest mode - show info
-                this.showGuestInfo();
-            } else {
-                // Registered user - create game session (non-blocking, won't prevent game from loading)
-                this.startGameSession().catch(err => {
-                    console.warn('Game session creation failed (non-blocking):', err);
-                });
-            }
+        // Check auth — use facade if available, else fall back to localStorage
+        const facade = window.facade;
+        const tokenKey = window.APP_CONFIG?.TOKEN_KEY || 'access_token';
+        const isAuthenticated = facade
+            ? facade.isAuthenticated()
+            : !!localStorage.getItem(tokenKey);
+        
+        if (!isAuthenticated) {
+            this.showGuestInfo();
+        } else {
+            // Logged-in: create game session (non-blocking)
+            this._startGameSession().catch(err => {
+                if (window.AppLogger) window.AppLogger.warn('Session creation failed (non-blocking)');
+            });
+        }
 
-            // Load game in iframe (always runs regardless of session status)
-            setTimeout(() => {
-                if (loadingElement) {
-                    loadingElement.style.display = 'none';
-                }
-                const gameFrame = document.getElementById('gameFrame');
-                const gameNameDisplay = document.getElementById('currentGameName');
-                if (gameFrame) {
-                    // Build URL with world/level/player params so the Wasm module can read them
-                    const world = 'Space';   // TODO: let user choose world on games page
-                    const level = 1;
-                    const playerIndex = this.currentGameIndex || 0;
-                    const gameUrl = `${game.url || 'game/index.html'}?world=${world}&level=${level}&player=${playerIndex}`;
-                    gameFrame.src = gameUrl;
-                }
-                if (gameNameDisplay) {
-                    gameNameDisplay.textContent = game.name;
-                }
-            }, 1500);
+        // Load the game iframe after a short delay for the loading animation
+        setTimeout(() => {
+            if (loadingElement) loadingElement.style.display = 'none';
             
-        } catch (error) {
-            console.error('Error launching game:', error);
-            if (loadingElement) {
-                loadingElement.style.display = 'none';
+            const gameFrame = document.getElementById('gameFrame');
+            const gameNameDisplay = document.getElementById('currentGameName');
+            
+            if (gameFrame) {
+                const gameUrl = (game.url || 'game/index.html');
+                gameFrame.src = gameUrl;
             }
-            alert('Error launching game. Please try again.');
+            if (gameNameDisplay) {
+                gameNameDisplay.textContent = game.name;
+            }
+        }, 1200);
+    }
+
+    /**
+     * Apply the game's background color/image behind the iframe
+     * so the area around the game matches the game's theme.
+     */
+    _applyGameBackground(game) {
+        const container = document.querySelector('.game-fullscreen-container');
+        const page = document.getElementById('game-play-page');
+        
+        if (page) {
+            const bg = game.homepageBg || '#000428';
+            page.style.backgroundColor = bg;
+        }
+        if (container) {
+            const bg = game.homepageBg || '#000428';
+            container.style.backgroundColor = bg;
+            
+            // If there's a homepage image, use it as a blurred background
+            if (game.homepageImage || game.thumbnail) {
+                const imgUrl = game.homepageImage || game.thumbnail;
+                container.style.backgroundImage = `url('${imgUrl}')`;
+                container.style.backgroundSize = 'cover';
+                container.style.backgroundPosition = 'center';
+            }
         }
     }
     
@@ -101,25 +112,25 @@ class GamesManager {
         const guestInfo = document.getElementById('guestInfo');
         if (guestInfo) {
             guestInfo.style.display = 'block';
-            setTimeout(() => {
-                guestInfo.style.display = 'none';
-            }, 5000);
+            setTimeout(() => { guestInfo.style.display = 'none'; }, 8000);
         }
     }
     
-    async startGameSession() {
+    async _startGameSession() {
         try {
-            // Get actual player_id from JWT token
-            const token = localStorage.getItem('access_token');
-            if (!token) throw new Error('Not authenticated');
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const playerId = payload.player_id;
-
-            const response = await window.api.createGameSession(playerId, null);
-            this.gameSession = response;
-            console.log('Game session started:', this.gameSession);
+            const facade = window.facade;
+            if (facade && facade.isAuthenticated()) {
+                const session = await facade.createGameSession(null);
+                this.gameSession = session;
+            } else {
+                // Fallback: direct API call
+                const playerId = window.api?.getLocalPlayerId();
+                if (!playerId) return;
+                const session = await window.api.createGameSession(playerId, null);
+                this.gameSession = session;
+            }
         } catch (error) {
-            console.error('Error starting game session:', error);
+            if (window.AppLogger) window.AppLogger.error('Game session error');
         }
     }
     
@@ -127,20 +138,15 @@ class GamesManager {
         if (!this.gameSession) return;
         
         try {
-            await window.api.request(`/game/sessions/${this.gameSession.id}`, {
-                method: 'PATCH',
-                body: JSON.stringify({
-                    score: score,
-                    level_reached: level,
-                    completed: true,
-                    ended_at: new Date().toISOString()
-                })
-            });
-            
-            console.log('Game session ended');
+            const facade = window.facade;
+            if (facade) {
+                await facade.endGameSession(this.gameSession.id, score, level);
+            } else {
+                await window.api.endGameSession(this.gameSession.id, score, level);
+            }
             this.gameSession = null;
         } catch (error) {
-            console.error('Error ending game session:', error);
+            if (window.AppLogger) window.AppLogger.error('End session error');
         }
     }
 
@@ -152,21 +158,20 @@ class GamesManager {
         }
         
         const nextGame = this.games[this.currentGameIndex];
-        
         if (nextGame.comingSoon) {
             alert(`${nextGame.name} - Coming Soon!`);
             return;
         }
-        
-        // Switch to next game
         this.launchGame(nextGame.id);
     }
     
     toggleFullscreen() {
         const gameContainer = document.getElementById('game-play-page') || document.documentElement;
 
-        if (!document.fullscreenElement) {
-            // Use vendor-prefixed API for cross-browser support (Chrome, Firefox, Safari)
+        if (!document.fullscreenElement &&
+            !document.webkitFullscreenElement &&
+            !document.mozFullScreenElement &&
+            !document.msFullscreenElement) {
             const requestFS = gameContainer.requestFullscreen
                 || gameContainer.webkitRequestFullscreen
                 || gameContainer.mozRequestFullScreen
@@ -176,9 +181,7 @@ class GamesManager {
                 requestFS.call(gameContainer).then(() => {
                     this.isFullscreen = true;
                     this.updateFullscreenUI();
-                }).catch(err => {
-                    console.error('Error attempting to enable fullscreen:', err);
-                });
+                }).catch(() => {});
             }
         } else {
             const exitFS = document.exitFullscreen
@@ -190,7 +193,7 @@ class GamesManager {
                 exitFS.call(document).then(() => {
                     this.isFullscreen = false;
                     this.updateFullscreenUI();
-                });
+                }).catch(() => {});
             }
         }
     }
@@ -198,71 +201,78 @@ class GamesManager {
     updateFullscreenUI() {
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         if (fullscreenBtn) {
-            fullscreenBtn.textContent = this.isFullscreen ? '⊡ Exit Fullscreen' : '⛶ Fullscreen';
+            const icon = fullscreenBtn.querySelector('.control-icon');
+            const text = fullscreenBtn.querySelector('.control-text');
+            if (icon) icon.textContent = this.isFullscreen ? '⊡' : '⛶';
+            if (text) text.textContent = this.isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
         }
     }
 
     toggleGameMenu() {
-        // Ouvrir le menu latéral depuis le jeu
         const sideMenu = document.getElementById('sideMenu');
-        if (sideMenu) {
-            sideMenu.classList.toggle('visible');
-        }
+        if (sideMenu) sideMenu.classList.toggle('visible');
     }
 
     initGameControls() {
-        // Game card click handlers
+        // Game card click → launch
         const si3lnCard = document.getElementById('si3lnGameCard');
-        if (si3lnCard) {
-            si3lnCard.addEventListener('click', () => {
+        si3lnCard?.addEventListener('click', () => this.launchGame('si3ln'));
+        
+        // Home page "Play now" link → launch
+        const playLink = document.getElementById('playGameLink');
+        if (playLink) {
+            playLink.addEventListener('click', (e) => {
+                e.preventDefault();
                 this.launchGame('si3ln');
             });
         }
         
-        // Navigation buttons
-        const prevBtn = document.getElementById('prevGameBtn');
-        if (prevBtn) {
-            prevBtn.addEventListener('click', () => {
-                this.navigateGame('prev');
-            });
+        // Navigation buttons — only show if multiple games are playable
+        const navContainer = document.querySelector('.game-navigation');
+        const playableGames = this.games.filter(g => !g.comingSoon && g.isPlayable !== false);
+        if (navContainer && playableGames.length > 1) {
+            navContainer.classList.add('multi-game');
         }
+        document.getElementById('prevGameBtn')?.addEventListener('click', () => this.navigateGame('prev'));
+        document.getElementById('nextGameBtn')?.addEventListener('click', () => this.navigateGame('next'));
         
-        const nextBtn = document.getElementById('nextGameBtn');
-        if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
-                this.navigateGame('next');
+        // Fullscreen
+        document.getElementById('fullscreenBtn')?.addEventListener('click', () => this.toggleFullscreen());
+        
+        // Exit game
+        document.getElementById('exitGameBtn')?.addEventListener('click', () => {
+            if (this.gameSession) {
+                this.endGameSession(0, 1);
+            }
+            // Reset iframe
+            const gameFrame = document.getElementById('gameFrame');
+            if (gameFrame) gameFrame.src = 'about:blank';
+            // Reset background
+            const page = document.getElementById('game-play-page');
+            if (page) page.style.backgroundColor = '';
+            const container = document.querySelector('.game-fullscreen-container');
+            if (container) {
+                container.style.backgroundColor = '';
+                container.style.backgroundImage = '';
+            }
+            
+            if (window.app) window.app.navigateTo('games');
+        });
+        
+        // Fullscreen change listener (cross-browser)
+        const fsEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+        fsEvents.forEach(evt => {
+            document.addEventListener(evt, () => {
+                this.isFullscreen = !!(
+                    document.fullscreenElement ||
+                    document.webkitFullscreenElement ||
+                    document.mozFullScreenElement ||
+                    document.msFullscreenElement
+                );
+                this.updateFullscreenUI();
             });
-        }
-        
-        // Fullscreen button
-        const fullscreenBtn = document.getElementById('fullscreenBtn');
-        if (fullscreenBtn) {
-            fullscreenBtn.addEventListener('click', () => {
-                this.toggleFullscreen();
-            });
-        }
-        
-        // Exit game button
-        const exitGameBtn = document.getElementById('exitGameBtn');
-        if (exitGameBtn) {
-            exitGameBtn.addEventListener('click', () => {
-                if (confirm('Exit game? Your progress will be saved.')) {
-                    if (this.gameSession) {
-                        // Get score from game iframe if possible
-                        this.endGameSession(0, 1);
-                    }
-                    window.app.navigateTo('games');
-                }
-            });
-        }
-        
-        // Listen for fullscreen changes
-        document.addEventListener('fullscreenchange', () => {
-            this.isFullscreen = !!document.fullscreenElement;
-            this.updateFullscreenUI();
         });
     }
 }
 
-// Export for use in main app
 window.GamesManager = GamesManager;

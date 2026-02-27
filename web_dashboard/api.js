@@ -1,68 +1,70 @@
+// api.js — Raw API Client (internal — app code should use window.facade)
+// =======================================================================
+// SECURITY: No console.log of tokens, response bodies, or sensitive data.
+// All logging goes through AppLogger which respects APP_CONFIG.DEBUG_MODE.
+
+'use strict';
+
 class APIClient {
-    constructor(baseURL = '/api') {
-        this.baseURL = baseURL;
-        console.log('API Client initialized with baseURL:', this.baseURL);
+    constructor(baseURL) {
+        this.baseURL = baseURL || (window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : '/api');
+    }
+
+    _getToken() {
+        return localStorage.getItem(
+            (window.APP_CONFIG && window.APP_CONFIG.TOKEN_KEY) || 'SI3LN_SESSION'
+        ) || localStorage.getItem('access_token');
     }
 
     async request(endpoint, options = {}) {
-        const token = localStorage.getItem('access_token');
+        const token = this._getToken();
         const fullURL = `${this.baseURL}${endpoint}`;
-        
-        console.log('API Request:', fullURL, options.method || 'GET');
 
         const headers = {
             'Content-Type': 'application/json',
             ...(token && { 'Authorization': `Bearer ${token}` }),
-            ...options.headers
+            ...options.headers,
         };
 
         try {
-            const response = await fetch(fullURL, {        
-                ...options,
-                headers
-            });
+            const response = await fetch(fullURL, { ...options, headers });
 
-            console.log('API Response:', response.status, response.statusText);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('API Error Response:', errorText);
-                throw new Error(`API Error: ${response.status} - ${errorText}`);
+            // Safe logging — method + endpoint + status only
+            if (window.AppLogger) {
+                window.AppLogger.api(options.method || 'GET', endpoint, response.status);
             }
 
-            const data = await response.json();
-            console.log('API Success:', data);
-            return data;
+            if (!response.ok) {
+                await response.text(); // consume body
+                throw new Error(`API Error: ${response.status}`);
+            }
+
+            return await response.json();
         } catch (error) {
-            console.error('API Request failed:', error);
+            if (window.AppLogger) window.AppLogger.error('Request failed:', endpoint);
             throw error;
         }
     }
 
-    // Auth
     async login(username, password) {
         return this.request('/auth/login', {
             method: 'POST',
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username, password }),
         });
     }
 
     async signup(userData) {
-        console.log('Signup called with:', userData);
         return this.request('/auth/register', {
             method: 'POST',
-            body: JSON.stringify(userData)
+            body: JSON.stringify(userData),
         });
     }
 
-    // Player/Profile endpoints
     async getCurrentPlayer() {
-        // Prefer the enriched /game/profile/me endpoint (includes achievements, recent scores)
         try {
             return await this.request('/game/profile/me');
         } catch (_) {
-            // Fallback: decode player_id from JWT and call /game/players/:id
-            const token = localStorage.getItem('access_token');
+            const token = this._getToken();
             if (!token) throw new Error('Not authenticated');
             const payload = JSON.parse(atob(token.split('.')[1]));
             return this.getPlayer(payload.player_id);
@@ -76,7 +78,7 @@ class APIClient {
     async updatePlayer(playerId, data) {
         return this.request(`/game/players/${playerId}`, {
             method: 'PUT',
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
         });
     }
 
@@ -88,7 +90,6 @@ class APIClient {
         return this.request(`/game/leaderboard?limit=${limit}`);
     }
 
-    // Current authenticated user info (calls /auth/me)
     async getCurrentUser() {
         return this.request('/auth/me');
     }
@@ -97,60 +98,45 @@ class APIClient {
         return this.request('/game/stats');
     }
 
-    // ── Role helpers ─────────────────────────────────────────────────────────
-
-    /**
-     * Decode the JWT stored in localStorage and return a role string.
-     * Returns: 'admin' | 'player' | 'guest'
-     * (No network call – reads the JWT payload directly.)
-     */
     getLocalRole() {
-        const token = localStorage.getItem('access_token');
+        const token = this._getToken();
         if (!token) return 'guest';
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
             if (payload.is_superuser || payload.is_staff) return 'admin';
             return 'player';
-        } catch (_) {
-            return 'guest';
-        }
+        } catch (_) { return 'guest'; }
     }
 
-    /** Decode the player_id from the stored JWT token. */
     getLocalPlayerId() {
-        const token = localStorage.getItem('access_token');
+        const token = this._getToken();
         if (!token) return null;
         try {
             return JSON.parse(atob(token.split('.')[1])).player_id ?? null;
         } catch (_) { return null; }
     }
 
-    /** Decode the username from the stored JWT token. */
     getLocalUsername() {
-        const token = localStorage.getItem('access_token');
+        const token = this._getToken();
         if (!token) return null;
         try {
             return JSON.parse(atob(token.split('.')[1])).username ?? null;
         } catch (_) { return null; }
     }
 
-    // Game Sessions (for C++ game engine integration)
     async createGameSession(playerId, worldId = null) {
         const body = { player_id: playerId };
         if (worldId) body.world_id = worldId;
         return this.request('/game/sessions', {
             method: 'POST',
-            body: JSON.stringify(body)
+            body: JSON.stringify(body),
         });
     }
 
     async updateGameSession(sessionId, score, level) {
         return this.request(`/game/sessions/${sessionId}`, {
             method: 'PATCH',
-            body: JSON.stringify({
-                score: score,
-                level_reached: level
-            })
+            body: JSON.stringify({ score, level_reached: level }),
         });
     }
 
@@ -160,8 +146,8 @@ class APIClient {
             body: JSON.stringify({
                 score: finalScore,
                 level_reached: finalLevel,
-                completed: true          // triggers Player.total_score update on the server
-            })
+                completed: true,
+            }),
         });
     }
 
@@ -171,5 +157,6 @@ class APIClient {
     }
 }
 
-window.api = new APIClient();
-console.log('API Client ready:', window.api);
+// Create raw client (internal — app code should use window.facade)
+window._rawApiClient = new APIClient();
+window.api = window._rawApiClient;

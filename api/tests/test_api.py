@@ -218,7 +218,7 @@ def test_update_player(player_id):
     }
     
     try:
-        response = requests.put(f"{GAME_URL}/players/{player_id}", json=update_data)
+        response = requests.put(f"{GAME_URL}/players/{player_id}", json=update_data, headers=get_auth_headers())
         
         if response.status_code == 200:
             player = response.json()
@@ -241,7 +241,7 @@ def test_create_session(player_id):
     }
     
     try:
-        response = requests.post(f"{GAME_URL}/sessions", json=session_data)
+        response = requests.post(f"{GAME_URL}/sessions", json=session_data, headers=get_auth_headers())
         
         if response.status_code == 200:
             session = response.json()
@@ -260,7 +260,7 @@ def test_get_sessions():
     print_info("Testing get all sessions...")
     
     try:
-        response = requests.get(f"{GAME_URL}/sessions")
+        response = requests.get(f"{GAME_URL}/sessions", headers=get_auth_headers())
         
         if response.status_code == 200:
             sessions = response.json()
@@ -280,7 +280,7 @@ def test_get_session(session_id):
     print_info(f"Testing get session ID {session_id}...")
     
     try:
-        response = requests.get(f"{GAME_URL}/sessions/{session_id}")
+        response = requests.get(f"{GAME_URL}/sessions/{session_id}", headers=get_auth_headers())
         
         if response.status_code == 200:
             session = response.json()
@@ -305,7 +305,7 @@ def test_update_session(session_id):
     }
     
     try:
-        response = requests.patch(f"{GAME_URL}/sessions/{session_id}", json=update_data)
+        response = requests.patch(f"{GAME_URL}/sessions/{session_id}", json=update_data, headers=get_auth_headers())
         
         if response.status_code == 200:
             session = response.json()
@@ -367,7 +367,7 @@ def test_delete_session(session_id):
     print_info(f"Testing delete session ID {session_id}...")
     
     try:
-        response = requests.delete(f"{GAME_URL}/sessions/{session_id}")
+        response = requests.delete(f"{GAME_URL}/sessions/{session_id}", headers=get_auth_headers())
         
         if response.status_code == 200:
             print_success("Session deleted successfully")
@@ -384,7 +384,7 @@ def test_delete_player(player_id):
     print_info(f"Testing delete player ID {player_id}...")
     
     try:
-        response = requests.delete(f"{GAME_URL}/players/{player_id}")
+        response = requests.delete(f"{GAME_URL}/players/{player_id}", headers=get_auth_headers())
         
         if response.status_code == 200:
             print_success("Player deleted successfully")

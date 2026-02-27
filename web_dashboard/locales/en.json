@@ -1,11 +1,118 @@
 {
-    "welcome": "Welcome",
-    "play": "Play",
-    "profile": "Profile",
-    "games": "Games",
-    "help": "Help",
-    "about": "About",
-    "login": "Login",
-    "logout": "Logout",
-    "create_account": "Create account"
+    "menu": {
+        "home": "Home",
+        "profile": "Profile",
+        "games": "Games",
+        "help": "Help",
+        "settings": "Settings",
+        "aboutUs": "About us",
+        "logout": "Logout"
+    },
+    "topBar": {
+        "search": "Search...",
+        "loginSignup": "🔐 Login / Sign Up",
+        "logout": "Logout"
+    },
+    "home": {
+        "welcome": "Welcome in",
+        "subtitle": "Gaming platform",
+        "playNow": "Play now →",
+        "leaderboard": "Leaderboard",
+        "playerProfile": "Player Profile",
+        "loading": "Loading..."
+    },
+    "login": {
+        "title": "🔐 Login to ARCAD3X",
+        "username": "Username",
+        "password": "Password",
+        "usernamePlaceholder": "Your username",
+        "passwordPlaceholder": "********",
+        "rememberMe": "Remember me",
+        "loginButton": "Login",
+        "forgotPassword": "Forgot password?",
+        "createAccount": "Create an account"
+    },
+    "signup": {
+        "title": "📝 Create an account",
+        "email": "Email",
+        "emailPlaceholder": "your@email.com",
+        "pseudo": "Pseudo",
+        "pseudoPlaceholder": "Choose your username",
+        "pseudoWarning": "⚠️ This username cannot be changed later (only admins can modify it)",
+        "password": "Password",
+        "confirmPassword": "Confirm password",
+        "passwordPlaceholder": "********",
+        "reqLength": "✗ 8 characters min",
+        "reqNumber": "✗ At least 1 number",
+        "reqUpper": "✗ At least 1 uppercase",
+        "preferredLanguage": "Preferred Language",
+        "acceptTerms": "I accept the",
+        "termsOfService": "terms of service",
+        "createButton": "Create my account",
+        "alreadyHaveAccount": "Already have an account?",
+        "loginLink": "Login here"
+    },
+    "profile": {
+        "editProfile": "Edit Profile",
+        "backgroundColor": "🎨 Background Color",
+        "profilePicture": "📸 Profile Picture (max 5MB)",
+        "chooseImage": "Choose Image",
+        "imageHint": "PNG, JPG, GIF up to 5MB",
+        "bio": "📝 Bio",
+        "bioPlaceholder": "Tell us about yourself...",
+        "privacy": "🔒 Privacy",
+        "showScores": "Show my scores on profile",
+        "favoriteGames": "⭐ Favorite Games",
+        "multiSelectHint": "Hold Ctrl/Cmd to select multiple",
+        "saveChanges": "Save Changes",
+        "cancel": "Cancel"
+    },
+    "games": {
+        "title": "Games",
+        "comingSoon": "Coming Soon",
+        "guestWarning": "⚠️ You're playing as a guest. Your progress will not be saved.",
+        "loginToSave": "Login",
+        "registerToSave": "Register",
+        "toSaveProgress": "to save your progress",
+        "fullscreen": "Fullscreen",
+        "exitFullscreen": "Exit Fullscreen",
+        "previousGame": "◀ Previous Game",
+        "nextGame": "Next Game ▶"
+    },
+    "help": {
+        "title": "Help Center",
+        "tutorials": "Game Tutorials",
+        "tutorialsDesc": "Learn how to play our games",
+        "viewTutorials": "View Tutorials",
+        "reportPlayer": "Report Player",
+        "reportPlayerDesc": "Report inappropriate behavior",
+        "reportPlayerBtn": "Report a Player",
+        "reportBug": "Report Bug",
+        "reportBugDesc": "Help us improve by reporting issues",
+        "reportBugBtn": "Report a Bug",
+        "support": "Support Us",
+        "supportDesc": "Support the development of ARCAD3X",
+        "supportBtn": "Support Project",
+        "backToMenu": "← Back to Help Menu"
+    },
+    "settings": {
+        "title": "⚙️ Settings",
+        "language": "Language",
+        "changeLanguage": "Change language"
+    },
+    "about": {
+        "title": "ℹ️ About us"
+    },
+    "common": {
+        "close": "Close",
+        "save": "Save",
+        "cancel": "Cancel",
+        "submit": "Submit",
+        "back": "Back",
+        "next": "Next",
+        "previous": "Previous",
+        "loading": "Loading...",
+        "error": "Error",
+        "success": "Success"
+    }
 }
