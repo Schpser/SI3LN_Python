@@ -1,6 +1,8 @@
 from ninja import Schema
 from datetime import datetime
 from typing import Optional
+from pydantic import Field, field_validator
+import re
 
 
 class PlayerSchema(Schema):
@@ -37,7 +39,7 @@ class GameSessionCreateSchema(Schema):
 
 
 class GameSessionUpdateSchema(Schema):
-    score: Optional[int] = None
+    score: Optional[int] = Field(None, ge=0)
     level_reached: Optional[int] = None
     enemies_killed: Optional[int] = None
     duration_seconds: Optional[int] = None
@@ -126,9 +128,16 @@ class EnhancedProfileSchema(Schema):
 class ProfileUpdateSchema(Schema):
     username: Optional[str] = None
     email: Optional[str] = None
-    bio: Optional[str] = None
+    bio: Optional[str] = Field(None, max_length=500)
     bg_color: Optional[str] = None
     show_scores: Optional[bool] = None
+
+    @field_validator('bg_color')
+    @classmethod
+    def validate_bg_color(cls, v):
+        if v is not None and not re.match(r'^#[0-9a-fA-F]{6}$', v):
+            raise ValueError('Invalid hex color. Use format like #FF5500.')
+        return v
 
 
 # Password Change Schema

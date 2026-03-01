@@ -297,7 +297,9 @@ def update_my_profile(request, payload: ProfileUpdateSchema):
         user.save()
     
     if payload.bio is not None:
-        player.bio = payload.bio
+        import re
+        # Strip HTML tags to prevent XSS
+        player.bio = re.sub(r'<[^>]+>', '', payload.bio)
     
     if payload.bg_color is not None:
         player.bg_color = payload.bg_color
