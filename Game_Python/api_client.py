@@ -137,8 +137,8 @@ class APIClient:
             "username": username,
             "password": password,
         })
-        if result and "access_token" in result:
-            self.set_token(result["access_token"])
+        if result and "token" in result:
+            self.set_token(result["token"])
             return True
         return False
 
@@ -169,7 +169,7 @@ class APIClient:
             "score":          score,
             "level_reached":  level,
             "enemies_killed": enemies_killed,
-            "duration":       duration,
+            "duration_seconds": duration,
             "completed":      True,
         })
         self._session_id = None

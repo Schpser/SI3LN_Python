@@ -96,6 +96,9 @@ class AuthSystem:
         if not self.current_user or self.guest_mode:
             return False
         
+        # Auto-create a local record for JWT-authenticated users
+        self.ensure_user_entry(self.current_user)
+        
         for key, value in kwargs.items():
             if key in self.users[self.current_user]:
                 self.users[self.current_user][key] = value
@@ -103,6 +106,18 @@ class AuthSystem:
         self.save_users()
         return True
     
+    def ensure_user_entry(self, username):
+        """Ensure a local entry exists for *username* (e.g. JWT-authenticated users)."""
+        if username and username not in self.users:
+            self.users[username] = {
+                "password": "",
+                "email": "",
+                "selected_character": 0,
+                "high_score": 0,
+                "levels_completed": {}
+            }
+            self.save_users()
+
     def get_user_data(self, key=None):
         """Get current user data"""
         if self.guest_mode:
@@ -113,6 +128,9 @@ class AuthSystem:
         
         if not self.current_user:
             return None
+        
+        # Auto-create a local record for JWT-authenticated users
+        self.ensure_user_entry(self.current_user)
         
         if key:
             return self.users[self.current_user].get(key)

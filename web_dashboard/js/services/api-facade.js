@@ -137,7 +137,6 @@ class ApiFacadeService {
                     score,
                     level_reached: level,
                     completed: true,
-                    ended_at: new Date().toISOString(),
                 }),
             })
         );

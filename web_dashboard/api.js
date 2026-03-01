@@ -133,13 +133,6 @@ class APIClient {
         });
     }
 
-    async updateGameSession(sessionId, score, level) {
-        return this.request(`/game/sessions/${sessionId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ score, level_reached: level }),
-        });
-    }
-
     async endGameSession(sessionId, finalScore, finalLevel) {
         return this.request(`/game/sessions/${sessionId}`, {
             method: 'PATCH',

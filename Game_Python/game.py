@@ -53,6 +53,7 @@ class Game:
         else:
             self.auth.login_as_guest(0)
         self._session_started = False
+        self._session_start_time = 0
         
         # Game data
         self.current_score = 0
@@ -60,6 +61,7 @@ class Game:
         self.current_world = "Space"
         self.lives = MAX_LIVES
         self.selected_character = 0
+        self.enemies_killed = 0
         
         # Nouveaux systèmes
         self.bonuses = pygame.sprite.Group()
@@ -505,10 +507,12 @@ class Game:
             pos = event.pos
             
             if self.btn_restart.is_clicked(pos):
+                self._end_api_session()
                 self.level_selector.open()
                 self.state = STATE_LEVEL_SELECT
             
             elif self.btn_finish.is_clicked(pos):
+                self._end_api_session()
                 self.state = STATE_MAIN_MENU
             
             # Profile icon
@@ -524,6 +528,7 @@ class Game:
                 self.current_level += 1
                 max_levels = WORLDS[self.current_world]["levels"]
                 if self.current_level > max_levels:
+                    self._end_api_session()
                     self.show_message("Tous les niveaux terminés!", GREEN)
                     self.level_selector.open()
                     self.state = STATE_LEVEL_SELECT
@@ -531,6 +536,7 @@ class Game:
                     self.start_level()
             
             elif self.btn_level_select.is_clicked(pos):
+                self._end_api_session()
                 self.level_selector.open()
                 self.state = STATE_LEVEL_SELECT
             
@@ -538,6 +544,33 @@ class Game:
             if self.profile_icon and self.profile_icon.is_clicked(pos):
                 self.profile_screen.open()
     
+    def _end_api_session(self):
+        """End the current API game session (if any) and reset tracking."""
+        if self._session_started and self.api.is_authenticated():
+            duration = (pygame.time.get_ticks() - self._session_start_time) // 1000
+            self.api.end_session(
+                score=self.current_score,
+                level=self.current_level,
+                enemies_killed=self.enemies_killed,
+                duration=duration,
+            )
+        self._session_started = False
+        self._session_start_time = 0
+
+    def trigger_game_over(self):
+        """Centralised game-over handler: save score locally and set state."""
+        self.player = None
+        username = self.auth.current_user or "Guest"
+        if username != "Guest":
+            self.score_manager.add_score(
+                username, self.current_score, self.current_level
+            )
+            self.auth.update_user_data(
+                high_score=max(self.current_score,
+                               self.auth.get_user_data("high_score") or 0)
+            )
+        self.state = STATE_GAME_OVER
+
     def start_level(self):
         """Start a new level"""
         # Open (or re-use) an API game session
@@ -546,6 +579,8 @@ class Game:
             world_id = WORLD_IDS.get(self.current_world, 1)
             self.api.start_session(world_id=world_id)
             self._session_started = True
+            self._session_start_time = pygame.time.get_ticks()
+            self.enemies_killed = 0
         print(f"[DEBUG] Starting level {self.current_level} in world {self.current_world}")
         self.state = STATE_GAMEPLAY
         self.lives = MAX_LIVES
@@ -903,6 +938,7 @@ class Game:
             hits = pygame.sprite.spritecollide(bullet, self.enemies, True)
             if hits:
                 bullet.kill()
+                self.enemies_killed += len(hits)
                 self.current_score += 10 * self.current_level
                 for enemy in hits:
                     explosion = Explosion(enemy.rect.centerx, enemy.rect.centery, 
@@ -922,15 +958,7 @@ class Game:
                                         self.player.rect.centery, RED,
                                         explosion_img=self.player_explosion_img)
                     self.explosions.add(explosion)
-                    self.player = None
-                    
-                    username = self.auth.current_user or "Guest"
-                    if username != "Guest":
-                        position, is_top_20 = self.score_manager.add_score(
-                            username, self.current_score, self.current_level
-                        )
-                    
-                    self.state = STATE_GAME_OVER
+                    self.trigger_game_over()
         
         # Enemies reach player
         if self.player:
@@ -938,8 +966,7 @@ class Game:
             if hits:
                 self.lives -= len(hits) * 2
                 if self.lives <= 0:
-                    self.player = None
-                    self.state = STATE_GAME_OVER
+                    self.trigger_game_over()
         
         # Player collects bonuses
         if self.player:
@@ -955,8 +982,7 @@ class Game:
                         self.lives -= attack.damage
                         attack.kill()
                         if self.lives <= 0:
-                            self.player = None
-                            self.state = STATE_GAME_OVER
+                            self.trigger_game_over()
     
     def draw(self):
         """Draw everything"""

@@ -114,7 +114,9 @@ try {
 }
 
 if (token && token !== 'null') {
-  // Store in localStorage so the same-origin iframe can read it
+  // Expose on window so Pygbag Python (platform.window.SI3LN_JWT_TOKEN) can read it
+  window.SI3LN_JWT_TOKEN = token;
+  // Also keep in localStorage for any JS-side code
   localStorage.setItem('SI3LN_JWT_TOKEN', token);
   localStorage.setItem('SI3LN_API_URL', window.location.origin);
 } else {
