@@ -9,13 +9,58 @@ Usage:
     SI3LN_API_URL=http://localhost:8000 python Tests/test_input_validation.py
 """
 
-import os, sys, time, requests
+import os, sys, time, subprocess, json as _json, requests
 
 BASE = os.environ.get("SI3LN_API_URL", "http://localhost:8000").rstrip("/")
 API = f"{BASE}/api"
 
-# Single session with keep-alive (avoids TCP exhaustion on rapid new connections)
-S = requests.Session()
+
+class _CurlResponse:
+    """Minimal response object matching requests.Response interface."""
+    def __init__(self, status_code, body):
+        self.status_code = status_code
+        self.text = body
+        self._body = body
+    def json(self):
+        return _json.loads(self._body)
+
+
+def _curl(method, url, *, json=None, data=None, headers=None, timeout=10):
+    """Use subprocess curl to avoid exhausting gunicorn workers."""
+    cmd = ["curl", "-s", "-X", method.upper(), "-w", "\n%{http_code}", "-m", str(timeout)]
+    if json is not None:
+        cmd += ["-H", "Content-Type: application/json", "-d", _json.dumps(json)]
+    elif data is not None:
+        cmd += ["-d", data]
+    if headers:
+        for k, v in headers.items():
+            cmd += ["-H", f"{k}: {v}"]
+    cmd.append(url)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 5)
+        lines = result.stdout.rsplit("\n", 1)
+        body = lines[0] if len(lines) > 1 else ""
+        code = int(lines[-1]) if lines[-1].strip().isdigit() else 0
+        return _CurlResponse(code, body)
+    except Exception as e:
+        return _CurlResponse(0, str(e))
+
+
+class _CurlSession:
+    """Drop-in replacement for requests.Session using subprocess curl."""
+    def post(self, url, *, json=None, data=None, headers=None, timeout=10, **kw):
+        return _curl("POST", url, json=json, data=data, headers=headers, timeout=timeout)
+    def get(self, url, *, headers=None, timeout=10, **kw):
+        return _curl("GET", url, headers=headers, timeout=timeout)
+    def patch(self, url, *, json=None, headers=None, timeout=10, **kw):
+        return _curl("PATCH", url, json=json, headers=headers, timeout=timeout)
+    def put(self, url, *, json=None, headers=None, timeout=10, **kw):
+        return _curl("PUT", url, json=json, headers=headers, timeout=timeout)
+    def delete(self, url, *, headers=None, timeout=10, **kw):
+        return _curl("DELETE", url, headers=headers, timeout=timeout)
+
+
+S = _CurlSession()
 
 PASS = "\033[92m✓\033[0m"
 FAIL = "\033[91m✗\033[0m"
@@ -242,7 +287,7 @@ def test_change_password_wrong_old():
                    headers=_auth(), timeout=15)
         if r.status_code == 400: ok("Wrong old password → rejected (400)")
         else:                    fail("Wrong old password", f"HTTP {r.status_code}")
-    except requests.exceptions.ReadTimeout:
+    except Exception:
         warn("Wrong old password", "request timed out (PBKDF2 slow)")
 
 def test_change_password_empty_new():
@@ -253,7 +298,7 @@ def test_change_password_empty_new():
         if r.status_code in (400, 422): ok("Empty new password → rejected")
         elif r.status_code == 200:      warn("Empty new password", "accepted (no minimum length check)")
         else:                           ok(f"Empty new password → HTTP {r.status_code}")
-    except requests.exceptions.ReadTimeout:
+    except Exception:
         warn("Empty new password", "request timed out (PBKDF2 slow)")
 
 

@@ -12,11 +12,54 @@ Usage:
 import os
 import sys
 import time
+import json as _json
+import subprocess
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 BASE = os.environ.get("SI3LN_API_URL", "http://localhost:8000").rstrip("/")
 API = f"{BASE}/api"
+
+
+class _CurlResponse:
+    """Minimal response object matching requests.Response interface."""
+    def __init__(self, status_code, body, headers_dict=None):
+        self.status_code = status_code
+        self.text = body
+        self._body = body
+        self.headers = headers_dict or {}
+    def json(self):
+        return _json.loads(self._body)
+
+
+def _curl(method, url, *, json=None, headers=None, timeout=10):
+    """Use subprocess curl to avoid connection pooling issues."""
+    cmd = ["curl", "-s", "-X", method.upper(), "-w", "\n%{http_code}", "-m", str(timeout)]
+    if json is not None:
+        cmd += ["-H", "Content-Type: application/json", "-d", _json.dumps(json)]
+    if headers:
+        for k, v in headers.items():
+            cmd += ["-H", f"{k}: {v}"]
+    cmd.append(url)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 2)
+        lines = result.stdout.rsplit("\n", 1)
+        body = lines[0] if len(lines) > 1 else ""
+        code = int(lines[-1]) if lines[-1].strip().isdigit() else 0
+        return _CurlResponse(code, body)
+    except Exception as e:
+        return _CurlResponse(0, str(e))
+
+
+def _curl_post(url, *, json=None, headers=None, timeout=10, **kw):
+    return _curl("POST", url, json=json, headers=headers, timeout=timeout)
+
+def _curl_get(url, *, headers=None, timeout=10, **kw):
+    return _curl("GET", url, headers=headers, timeout=timeout)
+
+# Replace requests functions
+requests.post = _curl_post
+requests.get = _curl_get
 
 PASS = "\033[92m✓\033[0m"
 FAIL = "\033[91m✗\033[0m"
@@ -138,13 +181,23 @@ def test_rapid_public_endpoint():
 
 def _concurrent_burst(label, method, url, n, json_body=None, headers=None):
     """Fire n simultaneous requests and report rate limiting."""
+    import urllib.request
+    import urllib.error
+
     def fire(i):
         try:
-            if method == "POST":
-                r = requests.post(url, json=json_body, headers=headers, timeout=15)
-            else:
-                r = requests.get(url, headers=headers, timeout=15)
-            return r.status_code
+            data = None
+            req_headers = {"Connection": "close"}
+            if json_body is not None:
+                data = _json.dumps(json_body).encode("utf-8")
+                req_headers["Content-Type"] = "application/json"
+            if headers:
+                req_headers.update(headers)
+            req = urllib.request.Request(url, data=data, headers=req_headers, method=method)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return resp.status
+        except urllib.error.HTTPError as e:
+            return e.code
         except Exception:
             return 0
 

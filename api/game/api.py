@@ -74,6 +74,11 @@ def list_sessions(request, player_id: int = None, world_id: int = None):
 @router.post("/sessions", response=GameSessionSchema, tags=["Game Sessions"], auth=jwt_auth)
 def create_session(request, payload: GameSessionCreateSchema):
     """Create a new game session (requires authentication)"""
+    # Validate player exists
+    player = Player.objects.filter(id=payload.player_id).first()
+    if player is None:
+        from ninja.responses import Response
+        return Response({"error": f"Player with id {payload.player_id} does not exist."}, status=404)
     session = GameSession.objects.create(**payload.dict())
     return session
 

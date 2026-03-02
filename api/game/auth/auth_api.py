@@ -1,12 +1,71 @@
+import re
+import time
+import hashlib
+from collections import defaultdict
+
 from ninja import Router, Schema
 from ninja.responses import Response
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from .jwt_auth import JWTAuth
 from .auth_decorators import jwt_auth
 from game.schemas import ChangePasswordSchema, AccountUpdateSchema
 
 router = Router()
+
+# ── Simple in-memory rate limiter ──────────────────────────────────────────
+_rate_store: dict[str, list[float]] = defaultdict(list)
+
+RATE_LIMITS = {
+    "auth": {"requests": 30, "window": 60},       # 30 req / 60 s for login/register
+    "password": {"requests": 5, "window": 60},     # 5  req / 60 s for password change
+}
+
+
+def _rate_limited(bucket: str, key: str) -> bool:
+    """Return True if the caller has exceeded the rate limit."""
+    cfg = RATE_LIMITS.get(bucket, RATE_LIMITS["auth"])
+    now = time.time()
+    window = cfg["window"]
+    store_key = f"{bucket}:{key}"
+    # Prune old entries
+    _rate_store[store_key] = [t for t in _rate_store[store_key] if now - t < window]
+    if len(_rate_store[store_key]) >= cfg["requests"]:
+        return True
+    _rate_store[store_key].append(now)
+    return False
+
+
+def _get_client_ip(request) -> str:
+    """Extract client IP from request (supports X-Forwarded-For)."""
+    xff = request.headers.get("X-Forwarded-For", "")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "unknown")
+
+
+def _validate_email_format(email: str) -> bool:
+    """Basic RFC-style email validation."""
+    if not email:
+        return True  # empty is allowed (optional field)
+    return bool(re.match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', email))
+
+
+def _validate_password_strength(password: str) -> list[str]:
+    """Validate password using Django's built-in validators + custom checks."""
+    errors: list[str] = []
+    if not password:
+        errors.append("Password cannot be empty.")
+        return errors
+    if len(password) < 8:
+        errors.append("Password must be at least 8 characters long.")
+    try:
+        validate_password(password)
+    except DjangoValidationError as e:
+        errors.extend(e.messages)
+    return errors
 
 
 class LoginSchema(Schema):
@@ -30,7 +89,25 @@ class TokenSchema(Schema):
 def register(request, payload: RegisterSchema):
     """Register a new user"""
     from game.models import Player
-    
+
+    # ── Rate limit ──
+    ip = _get_client_ip(request)
+    if _rate_limited("auth", ip):
+        return Response(
+            {"error": "Too many requests. Please try again later."},
+            status=429,
+            headers={"Retry-After": "60"},
+        )
+
+    # ── Validate password ──
+    pwd_errors = _validate_password_strength(payload.password)
+    if pwd_errors:
+        return Response({"error": "Password too weak.", "details": pwd_errors}, status=400)
+
+    # ── Validate email format ──
+    if not _validate_email_format(payload.email):
+        return Response({"error": "Invalid email format."}, status=400)
+
     # Check if user exists
     if User.objects.filter(username=payload.username).exists():
         return Response({"error": "Username already exists"}, status=400)
@@ -62,7 +139,18 @@ def register(request, payload: RegisterSchema):
 def login(request, payload: LoginSchema):
     """Login user and get JWT token (valid for 24 hours)"""
     from game.models import Player
-    
+
+    # ── Rate limit ──
+    ip = _get_client_ip(request)
+    if _rate_limited("auth", ip):
+        return Response(
+            {"error": "Too many requests. Please try again later."},
+            status=429,
+            headers={"Retry-After": "60"},
+        )
+
+    # Constant-time authentication: always hash even if user doesn't exist
+    # to prevent timing-based username enumeration.
     user = authenticate(username=payload.username, password=payload.password)
     
     if user is None:
@@ -148,10 +236,24 @@ def get_current_user(request):
 def change_password(request, payload: ChangePasswordSchema):
     """Change password for authenticated user"""
     user = request.auth
+
+    # ── Rate limit ──
+    ip = _get_client_ip(request)
+    if _rate_limited("password", ip):
+        return Response(
+            {"error": "Too many requests. Please try again later."},
+            status=429,
+            headers={"Retry-After": "60"},
+        )
     
     # Verify old password
     if not user.check_password(payload.old_password):
         return Response({"error": "Current password is incorrect"}, status=400)
+
+    # ── Validate new password strength ──
+    pwd_errors = _validate_password_strength(payload.new_password)
+    if pwd_errors:
+        return Response({"error": "New password too weak.", "details": pwd_errors}, status=400)
     
     # Set new password
     user.set_password(payload.new_password)
