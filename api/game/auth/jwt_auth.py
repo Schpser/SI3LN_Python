@@ -10,6 +10,23 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
 from typing import Optional, Dict, Any
+import os
+import uuid
+
+# Redis-backed token blacklist (shared across all workers)
+try:
+    import redis as _redis_lib
+    _redis_client = _redis_lib.from_url(
+        os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
+        decode_responses=True,
+        socket_connect_timeout=2,
+        socket_timeout=2,
+    )
+    _redis_client.ping()  # verify connection at startup
+    _USE_REDIS_BLACKLIST = True
+except Exception:
+    _USE_REDIS_BLACKLIST = False
+    _BLACKLISTED_TOKENS_FALLBACK: set = set()
 
 
 class JWTAuth:
@@ -63,6 +80,7 @@ class JWTAuth:
             'is_superuser': user.is_superuser,
             'exp': datetime.utcnow() + timedelta(hours=JWTAuth.get_expiration_hours()),
             'iat': datetime.utcnow(),
+            'jti': str(uuid.uuid4()),   # unique ID ensures each token is distinct
             'type': 'access'
         }
         
@@ -122,6 +140,27 @@ class JWTAuth:
             return JWTAuth.create_token(user)
         except User.DoesNotExist:
             return None
+
+    @staticmethod
+    def add_to_blacklist(token: str, ttl_seconds: int = 172800) -> None:
+        """Blacklist a token using Redis (shared across all workers)."""
+        if _USE_REDIS_BLACKLIST:
+            try:
+                _redis_client.setex(f"bl:{token}", ttl_seconds, "1")
+                return
+            except Exception:
+                pass
+        _BLACKLISTED_TOKENS_FALLBACK.add(token)
+
+    @staticmethod
+    def is_blacklisted(token: str) -> bool:
+        """Return True if the token has been explicitly invalidated."""
+        if _USE_REDIS_BLACKLIST:
+            try:
+                return bool(_redis_client.exists(f"bl:{token}"))
+            except Exception:
+                pass
+        return token in _BLACKLISTED_TOKENS_FALLBACK
 
 
 class JWTAuthMiddleware:

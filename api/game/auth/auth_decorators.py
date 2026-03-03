@@ -13,6 +13,8 @@ class JWTBearer(HttpBearer):
     
     def authenticate(self, request, token):
         """Authenticate request using JWT token"""
+        if JWTAuth.is_blacklisted(token):
+            return None
         user = JWTAuth.get_user_from_token(token)
         if user:
             request.user = user

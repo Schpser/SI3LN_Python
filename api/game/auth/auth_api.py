@@ -108,6 +108,13 @@ def register(request, payload: RegisterSchema):
     if not _validate_email_format(payload.email):
         return Response({"error": "Invalid email format."}, status=400)
 
+    # ── Validate username format ──
+    if not re.match(r'^[A-Za-z0-9_]{3,30}$', payload.username):
+        return Response(
+            {"error": "Username must be 3-30 characters, letters/numbers/underscore only."},
+            status=400,
+        )
+
     # Check if user exists
     if User.objects.filter(username=payload.username).exists():
         return Response({"error": "Username already exists"}, status=400)
@@ -172,12 +179,14 @@ def login(request, payload: LoginSchema):
     }
 
 
-@router.post("/logout", tags=["Auth"])
+@router.post("/logout", tags=["Auth"], auth=jwt_auth)
 def logout(request):
-    """Logout user (client should discard token)"""
-    # JWT is stateless, so we just return success
-    # Client should discard the token
-    return {"message": "Logged out successfully. Please discard your token."}
+    """Logout user and immediately invalidate their token"""
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header[7:] if auth_header.startswith('Bearer ') else None
+    if token:
+        JWTAuth.add_to_blacklist(token)
+    return {"message": "Logged out successfully. Token has been invalidated."}
 
 
 @router.post("/refresh", response=TokenSchema, tags=["Auth"], auth=jwt_auth)
@@ -192,6 +201,9 @@ def refresh_token(request):
     if not token:
         return Response({"error": "No token provided"}, status=401)
     
+    # Blacklist the old token before issuing a new one (token rotation)
+    JWTAuth.add_to_blacklist(token)
+
     new_token = JWTAuth.refresh_token(token)
     
     if not new_token:
@@ -250,6 +262,13 @@ def change_password(request, payload: ChangePasswordSchema):
     if not user.check_password(payload.old_password):
         return Response({"error": "Current password is incorrect"}, status=400)
 
+    # Reject same password (no reuse)
+    if payload.new_password == payload.old_password:
+        return Response(
+            {"error": "New password must be different from the current password."},
+            status=400,
+        )
+
     # ── Validate new password strength ──
     pwd_errors = _validate_password_strength(payload.new_password)
     if pwd_errors:
@@ -271,6 +290,9 @@ def update_account(request, payload: AccountUpdateSchema):
     
     # Update user fields if provided
     if payload.email is not None:
+        # Reject duplicate email
+        if payload.email and User.objects.filter(email=payload.email).exclude(id=user.id).exists():
+            return Response({"error": "Email address is already in use."}, status=409)
         user.email = payload.email
         # Also update player email
         try:

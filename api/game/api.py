@@ -43,8 +43,11 @@ def get_player(request, player_id: int):
 
 @router.put("/players/{player_id}", response=PlayerSchema, tags=["Players"], auth=jwt_auth)
 def update_player(request, player_id: int, payload: PlayerCreateSchema):
-    """Update a player (requires authentication)"""
+    """Update a player (requires authentication — can only update own player)"""
+    from ninja.responses import Response
     player = get_object_or_404(Player, id=player_id)
+    if player.user != request.auth:
+        return Response({"error": "You can only update your own player."}, status=403)
     for attr, value in payload.dict().items():
         setattr(player, attr, value)
     player.save()
@@ -53,8 +56,11 @@ def update_player(request, player_id: int, payload: PlayerCreateSchema):
 
 @router.delete("/players/{player_id}", response=MessageSchema, tags=["Players"], auth=jwt_auth)
 def delete_player(request, player_id: int):
-    """Delete a player (requires authentication)"""
+    """Delete a player (requires authentication — can only delete own player)"""
+    from ninja.responses import Response
     player = get_object_or_404(Player, id=player_id)
+    if player.user != request.auth:
+        return Response({"error": "You can only delete your own player."}, status=403)
     player.delete()
     return {"message": "Player deleted successfully"}
 
@@ -79,6 +85,9 @@ def create_session(request, payload: GameSessionCreateSchema):
     if player is None:
         from ninja.responses import Response
         return Response({"error": f"Player with id {payload.player_id} does not exist."}, status=404)
+    if player.user != request.auth:
+        from ninja.responses import Response
+        return Response({"error": "You can only create sessions for your own players."}, status=403)
     session = GameSession.objects.create(**payload.dict())
     return session
 
@@ -94,25 +103,36 @@ def update_session(request, session_id: int, payload: GameSessionUpdateSchema):
     """Update a game session (requires authentication)"""
     from django.utils import timezone
     session = get_object_or_404(GameSession, id=session_id)
-    
+    if session.player.user != request.auth:
+        from ninja.responses import Response
+        return Response({"error": "You can only update your own sessions."}, status=403)
+
+    # Validate level_reached >= 1
+    if payload.level_reached is not None and payload.level_reached < 1:
+        from ninja.responses import Response
+        return Response({"error": "level_reached must be at least 1."}, status=400)
+
+    # Remember completion state BEFORE applying updates (prevent double-counting)
+    was_completed = session.completed
+
     for attr, value in payload.dict(exclude_unset=True).items():
         setattr(session, attr, value)
-    
-    # Auto-set ended_at when session is marked completed
+
+    # Auto-set ended_at when session is first marked completed
     if payload.completed and not session.ended_at:
         session.ended_at = timezone.now()
-    
+
     session.save()
-    
-    # Update player stats only when the session ends (completed=True)
-    if payload.completed and payload.score is not None:
+
+    # Update player stats ONLY on the FIRST completion (not on subsequent patches)
+    if payload.completed and not was_completed and payload.score is not None:
         player = session.player
         player.total_score += payload.score
         player.games_played += 1
         if payload.level_reached is not None and payload.level_reached > player.highest_level:
             player.highest_level = payload.level_reached
         player.save()
-    
+
     return session
 
 
@@ -120,6 +140,9 @@ def update_session(request, session_id: int, payload: GameSessionUpdateSchema):
 def delete_session(request, session_id: int):
     """Delete a game session (requires authentication)"""
     session = get_object_or_404(GameSession, id=session_id)
+    if session.player.user != request.auth:
+        from ninja.responses import Response
+        return Response({"error": "You can only delete your own sessions."}, status=403)
     session.delete()
     return {"message": "Session deleted successfully"}
 
@@ -365,17 +388,39 @@ def upload_avatar(request):
     if not avatar_file:
         from ninja.responses import Response
         return Response({"error": "No avatar file provided"}, status=400)
-    
+
+    # Reject empty files
+    if avatar_file.size == 0:
+        from ninja.responses import Response
+        return Response({"error": "File is empty."}, status=400)
+
     # Validate file size (5MB)
     if avatar_file.size > 5 * 1024 * 1024:
         from ninja.responses import Response
         return Response({"error": "File too large. Maximum 5MB."}, status=400)
-    
-    # Validate file type
+
+    # Validate file type by content_type header
     allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
     if avatar_file.content_type not in allowed_types:
         from ninja.responses import Response
         return Response({"error": "Invalid file type. Use PNG, JPG, GIF or WebP."}, status=400)
+
+    # Magic-byte validation — catches files with a mismatched extension / content-type
+    MAGIC_BYTES = {
+        'image/png':  b'\x89PNG',
+        'image/jpeg': b'\xff\xd8\xff',
+        'image/gif':  b'GIF8',
+        'image/webp': b'RIFF',
+    }
+    if avatar_file.content_type in MAGIC_BYTES:
+        header = avatar_file.read(8)
+        avatar_file.seek(0)
+        if not header.startswith(MAGIC_BYTES[avatar_file.content_type]):
+            from ninja.responses import Response
+            return Response(
+                {"error": "File content does not match its declared type."},
+                status=400,
+            )
     
     # Delete old avatar if exists
     if player.avatar:

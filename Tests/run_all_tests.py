@@ -16,11 +16,17 @@ Usage:
     python Tests/run_all_tests.py --profile
 
 Suites:
-    --auth      Authentication tests (register, login, token, permissions)
-    --api       Full API endpoint tests (public, protected, edge cases)
-    --frontend  Frontend HTML/CSS/JS structure tests
-    --profile   Profile CRUD, avatar upload, bio, settings tests
-    --all       Run everything (default)
+    --auth          Authentication tests (register, login, token, permissions)
+    --api           Full API endpoint tests (public, protected, edge cases)
+    --frontend      Frontend HTML/CSS/JS structure tests
+    --profile       Profile CRUD, avatar upload, bio, settings tests
+    --authorization IDOR / cross-user access tests
+    --auth-edge     Auth edge cases (password change, token refresh)
+    --session-edge  Session edge cases (re-complete, filters, boundaries)
+    --game-units    Offline unit tests for Game_Python modules
+    --facade        Facade sanitization & validation (offline)
+    --avatar-edge   Avatar upload edge cases (SVG, format, size)
+    --all           Run everything (default)
 """
 
 import os
@@ -50,7 +56,13 @@ SUITES = {
     "integrity":  {"file": "test_data_integrity.py",    "label": "Data Integrity"},
     "validation": {"file": "test_input_validation.py",  "label": "Input Validation"},
     "e2e":        {"file": "test_e2e_flow.py",          "label": "End-to-End Flow"},
-    "ratelimit":  {"file": "test_rate_limiting.py",     "label": "Rate Limiting"},
+    "ratelimit":      {"file": "test_rate_limiting.py",      "label": "Rate Limiting"},
+    "authorization":  {"file": "test_authorization.py",      "label": "Authorization (IDOR)"},
+    "auth_edge":      {"file": "test_auth_edge_cases.py",    "label": "Auth Edge Cases"},
+    "session_edge":   {"file": "test_session_edge_cases.py",  "label": "Session Edge Cases"},
+    "game_units":     {"file": "test_game_units.py",          "label": "Game Unit Tests"},
+    "facade":         {"file": "test_facade.py",              "label": "Facade (Security)"},
+    "avatar_edge":    {"file": "test_avatar_edge_cases.py",   "label": "Avatar Edge Cases"},
 }
 
 
@@ -138,6 +150,12 @@ def main():
     parser.add_argument("--validation", action="store_true", help="Run input validation tests")
     parser.add_argument("--e2e", action="store_true", help="Run end-to-end flow tests")
     parser.add_argument("--ratelimit", action="store_true", help="Run rate limiting tests")
+    parser.add_argument("--authorization", action="store_true", help="Run IDOR / authorization tests")
+    parser.add_argument("--auth-edge", dest="auth_edge", action="store_true", help="Run auth edge-case tests")
+    parser.add_argument("--session-edge", dest="session_edge", action="store_true", help="Run session edge-case tests")
+    parser.add_argument("--game-units", dest="game_units", action="store_true", help="Run offline game unit tests")
+    parser.add_argument("--facade", action="store_true", help="Run facade security tests")
+    parser.add_argument("--avatar-edge", dest="avatar_edge", action="store_true", help="Run avatar edge-case tests")
     parser.add_argument("--all", action="store_true", help="Run all tests (default)")
     parser.add_argument("--skip-health", action="store_true", help="Skip server health check")
     args = parser.parse_args()
