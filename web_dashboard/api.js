@@ -16,6 +16,34 @@ class APIClient {
         ) || localStorage.getItem('access_token');
     }
 
+    /**
+     * Called on 401 – clears the stale JWT and updates UI so the user
+     * is shown as logged-out instead of silently failing on every request.
+     */
+    _handleExpiredToken() {
+        // Only act once per page-load to avoid cascading clears
+        if (this._tokenCleared) return;
+        this._tokenCleared = true;
+
+        const keys = [
+            window.APP_CONFIG?.TOKEN_KEY,
+            window.APP_CONFIG?.LEGACY_TOKEN_KEY,
+            'SI3LN_SESSION',
+            'access_token',
+            'SI3LN_JWT_TOKEN',
+        ];
+        keys.forEach(k => { if (k) localStorage.removeItem(k); });
+
+        if (window.AppLogger) {
+            window.AppLogger.warn('Session expired – please log in again');
+        }
+
+        // Update the dashboard UI if available
+        if (window.app && window.app.authManager) {
+            window.app.authManager.updateAuthUI(false);
+        }
+    }
+
     async request(endpoint, options = {}) {
         const token = this._getToken();
         const fullURL = `${this.baseURL}${endpoint}`;
@@ -36,6 +64,12 @@ class APIClient {
 
             if (!response.ok) {
                 await response.text(); // consume body
+
+                // Auto-clear expired / invalid tokens on 401
+                if (response.status === 401 && token) {
+                    this._handleExpiredToken();
+                }
+
                 throw new Error(`API Error: ${response.status}`);
             }
 

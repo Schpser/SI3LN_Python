@@ -479,7 +479,30 @@ class AppManager {
     checkAuth() {
         const facade = window.facade;
         const tokenKey = window.APP_CONFIG?.TOKEN_KEY || 'access_token';
-        const isLoggedIn = facade ? facade.isAuthenticated() : !!localStorage.getItem(tokenKey);
+        let isLoggedIn = facade ? facade.isAuthenticated() : !!localStorage.getItem(tokenKey);
+
+        // Verify the token hasn't expired (JWT exp claim is in seconds)
+        if (isLoggedIn) {
+            try {
+                const token = facade?._raw?._getToken?.() || window.api?._getToken?.()
+                    || localStorage.getItem(tokenKey);
+                if (token) {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    if (payload.exp && payload.exp * 1000 < Date.now()) {
+                        // Token expired — clean up
+                        if (window.AppLogger) window.AppLogger.warn('Session expired – please log in again');
+                        if (facade) { facade.logout(); }
+                        else {
+                            localStorage.removeItem(window.APP_CONFIG?.TOKEN_KEY || 'access_token');
+                            localStorage.removeItem(window.APP_CONFIG?.LEGACY_TOKEN_KEY || 'SI3LN_SESSION');
+                            localStorage.removeItem('SI3LN_JWT_TOKEN');
+                        }
+                        isLoggedIn = false;
+                    }
+                }
+            } catch (_) { /* malformed token — leave as-is, 401 handler will clean up */ }
+        }
+
         const username = isLoggedIn
             ? (facade?.getLocalUsername() || window.api?.getLocalUsername() || '')
             : '';

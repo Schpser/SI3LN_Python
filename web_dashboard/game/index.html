@@ -110,6 +110,17 @@ try {
   // Same-origin sandboxed iframes share localStorage directly.
   // No need to access window.parent — it can throw under COEP / sandbox.
   token = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_KEY);
+
+  // Reject expired tokens so the game starts in guest mode cleanly
+  if (token) {
+    try {
+      var payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        console.warn('[game/index] Token expired – starting as guest');
+        token = null;
+      }
+    } catch(_) { /* malformed → treat as no token */ token = null; }
+  }
 } catch(e) {
   console.warn('[game/index] localStorage read failed:', e);
 }
