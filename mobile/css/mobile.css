@@ -1,0 +1,32 @@
+/* ── SI3LN Mobile Styles ──────────────────────────────────────────────────
+ *  Mobile-specific stylesheet.
+ *  Shared styles (if any) can be imported from /css/ — those files are
+ *  served by Nginx's ^~ /css/ block with immutable cache headers.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+:root {
+    --color-primary: #2563eb;
+    --color-bg: #f5f5f5;
+    --color-surface: #ffffff;
+    --color-text: #1a1a1a;
+    --color-text-muted: #6b7280;
+    --radius: 12px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Touch-friendly tap targets (minimum 44px) */
+button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Prevent pull-to-refresh interfering with app gestures */
+html {
+    overscroll-behavior: none;
+}
+
+#app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: var(--safe-bottom);
+}

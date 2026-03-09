@@ -28,7 +28,7 @@ class Game:
         self.screen_height = DEFAULT_SCREEN_HEIGHT
         self.screen = pygame.display.set_mode(
             (self.screen_width, self.screen_height),
-            pygame.RESIZABLE
+            pygame.SCALED | pygame.RESIZABLE
         )
         pygame.display.set_caption("S I 3 L N")
         
@@ -102,6 +102,18 @@ class Game:
         
         # Fullscreen toggle
         self.is_fullscreen = False
+        
+        # ── Touch / mobile controls (mouse-based – pygbag maps touch→mouse) ─
+        self.touch_held = False            # True while mouse/finger is held down
+        self.touch_move_pos = None         # (x, y) target while dragging
+        self.touch_fire_held = False       # True while fire button is held
+        self.touch_auto_fire_timer = 0     # auto-repeat fire cooldown
+        self.touch_auto_fire_delay = 300   # ms between auto-fire shots
+        # Touch button zones (set in _build_touch_zones)
+        self.touch_fire_rect = None
+        self.touch_shield_rect = None
+        self.touch_mega_rect = None
+        self._build_touch_zones()
         
         # Timers pour les attaques spéciales
         self.last_special_attack_time = 0
@@ -311,6 +323,16 @@ class Game:
             if event.type == pygame.VIDEORESIZE:
                 self.handle_resize(event.w, event.h)
             
+            # ── Track mouse/touch held state (for drag-to-move) ───────
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self.touch_held = True
+            elif event.type == pygame.MOUSEBUTTONUP:
+                self.touch_held = False
+                self.touch_move_pos = None
+                self.touch_fire_held = False
+            elif event.type == pygame.MOUSEMOTION and self.touch_held:
+                self.touch_move_pos = event.pos
+            
             # Handle fullscreen toggle (F11)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_F11:
@@ -495,6 +517,24 @@ class Game:
         
         if event.type == pygame.MOUSEBUTTONDOWN:
             pos = event.pos
+            
+            # On-screen touch buttons (fire / shield / mega)
+            if self.touch_fire_rect and self.touch_fire_rect.collidepoint(pos):
+                self.touch_fire_held = True
+                self.shoot_player_bullet()
+                self.touch_auto_fire_timer = pygame.time.get_ticks()
+                return  # Don't process as movement
+            if self.touch_shield_rect and self.touch_shield_rect.collidepoint(pos):
+                if self.active_bonuses["shield"]["active"]:
+                    self.activate_shield()
+                return
+            if self.touch_mega_rect and self.touch_mega_rect.collidepoint(pos):
+                if self.active_bonuses["mega_shot"]["active"]:
+                    self.mega_shot()
+                return
+            
+            # Start dragging to move
+            self.touch_move_pos = pos
             
             # Profile icon
             if self.profile_icon and self.profile_icon.is_clicked(pos):
@@ -862,7 +902,18 @@ class Game:
         # Update player (sauf si rooté)
         keys = pygame.key.get_pressed()
         if not self.player_debuffs["rooted"]:
+            # Keyboard movement
             self.player.update(keys)
+            # Touch/mouse drag movement — move player toward held position
+            if self.touch_held and self.touch_move_pos and not self.touch_fire_held:
+                self.player.move_toward(*self.touch_move_pos)
+        
+        # Touch auto-fire: if fire button is held, keep shooting
+        if self.touch_fire_held:
+            now = pygame.time.get_ticks()
+            if now - self.touch_auto_fire_timer >= self.touch_auto_fire_delay:
+                self.shoot_player_bullet()
+                self.touch_auto_fire_timer = now
         
         # Update bullets
         self.player_bullets.update()
@@ -1089,10 +1140,8 @@ class Game:
         self.btn_back_login.draw(self.screen)
     
     def draw_gameplay(self):
-        """Draw gameplay"""
         self.screen.blit(self.game_bg, (0, 0))
         
-        # Draw entities
         if self.player:
             self.screen.blit(self.player.image, self.player.rect)
         
@@ -1103,16 +1152,15 @@ class Game:
         self.bonuses.draw(self.screen)
         self.special_attacks.draw(self.screen)
         
-        # Draw debuff effects
         if self.player_debuffs["blinded"]:
             overlay = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
             overlay.fill((210, 180, 140, 150))
             self.screen.blit(overlay, (0, 0))
         
-        # Draw HUD
         self.draw_hud()
-    
-    def draw_hud(self):
+          
+        # Draw on-screen touch buttons
+        self.draw_touch_controls()
         """Draw heads-up display"""
         hud_panel = pygame.Surface((self.screen_width, 50), pygame.SRCALPHA)
         hud_panel.fill((0, 0, 0, 180))
@@ -1222,12 +1270,12 @@ class Game:
         
         if self.is_fullscreen:
             self.screen = pygame.display.set_mode(
-                (0, 0), pygame.FULLSCREEN | pygame.RESIZABLE
+                (0, 0), pygame.FULLSCREEN | pygame.SCALED | pygame.RESIZABLE
             )
         else:
             self.screen = pygame.display.set_mode(
                 (DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT),
-                pygame.RESIZABLE
+                pygame.SCALED | pygame.RESIZABLE
             )
         
         self.screen_width = self.screen.get_width()
@@ -1238,18 +1286,76 @@ class Game:
         self.profile_screen = ProfileScreen(self.screen, self.auth, self.players)
         self.level_selector = LevelSelector(self.screen, WORLDS)
         self.update_profile_icon()
+        self._build_touch_zones()
     
     def handle_resize(self, width, height):
         """Handle window resize"""
         self.screen_width = width
         self.screen_height = height
-        self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode((width, height), pygame.SCALED | pygame.RESIZABLE)
         
         self.load_assets()
         self.create_ui()
         self.profile_screen = ProfileScreen(self.screen, self.auth, self.players)
         self.level_selector = LevelSelector(self.screen, WORLDS)
         self.update_profile_icon()
+        self._build_touch_zones()
+
+    # ── Touch / mobile helpers ────────────────────────────────────────────
+
+    def _build_touch_zones(self):
+        """Pre-compute on-screen touch button rectangles.
+        Called once at init and again on every resize."""
+        sw, sh = self.screen_width, self.screen_height
+        btn_size = 70
+        margin = 20
+        # Fire button: bottom-right
+        self.touch_fire_rect = pygame.Rect(
+            sw - btn_size - margin, sh - btn_size - margin,
+            btn_size, btn_size
+        )
+        # Shield button: above fire
+        self.touch_shield_rect = pygame.Rect(
+            sw - btn_size - margin, sh - btn_size * 2 - margin * 2,
+            btn_size, btn_size
+        )
+        # Mega-shot button: above shield
+        self.touch_mega_rect = pygame.Rect(
+            sw - btn_size - margin, sh - btn_size * 3 - margin * 3,
+            btn_size, btn_size
+        )
+
+    # (Touch is handled entirely through mouse events — pygbag
+    #  automatically translates touch into MOUSEBUTTONDOWN/UP/MOTION.)
+
+    def draw_touch_controls(self):
+        """Draw translucent on-screen buttons when in gameplay state."""
+        if self.state != STATE_GAMEPLAY:
+            return
+        alpha = 90
+
+        # Fire button
+        fire_surf = pygame.Surface((self.touch_fire_rect.w, self.touch_fire_rect.h), pygame.SRCALPHA)
+        pygame.draw.rect(fire_surf, (*RED, alpha), fire_surf.get_rect(), border_radius=12)
+        lbl = self.font_small.render("FIRE", True, WHITE)
+        fire_surf.blit(lbl, lbl.get_rect(center=(fire_surf.get_width()//2, fire_surf.get_height()//2)))
+        self.screen.blit(fire_surf, self.touch_fire_rect)
+
+        # Shield button (only if bonus available)
+        if self.active_bonuses["shield"]["active"]:
+            sh_surf = pygame.Surface((self.touch_shield_rect.w, self.touch_shield_rect.h), pygame.SRCALPHA)
+            pygame.draw.rect(sh_surf, (*BLUE, alpha), sh_surf.get_rect(), border_radius=12)
+            lbl = self.font_tiny.render("SHLD", True, WHITE)
+            sh_surf.blit(lbl, lbl.get_rect(center=(sh_surf.get_width()//2, sh_surf.get_height()//2)))
+            self.screen.blit(sh_surf, self.touch_shield_rect)
+
+        # Mega-shot button (only if bonus available)
+        if self.active_bonuses["mega_shot"]["active"]:
+            mg_surf = pygame.Surface((self.touch_mega_rect.w, self.touch_mega_rect.h), pygame.SRCALPHA)
+            pygame.draw.rect(mg_surf, (*YELLOW, alpha), mg_surf.get_rect(), border_radius=12)
+            lbl = self.font_tiny.render("MEGA", True, BLACK)
+            mg_surf.blit(lbl, lbl.get_rect(center=(mg_surf.get_width()//2, mg_surf.get_height()//2)))
+            self.screen.blit(mg_surf, self.touch_mega_rect)
     
     async def run(self):
         """Main game loop"""

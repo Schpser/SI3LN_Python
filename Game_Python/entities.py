@@ -53,8 +53,19 @@ class Player(pygame.sprite.Sprite):
                 dy *= 0.707
             self.move(dx, dy)
 
-
-class Enemy(pygame.sprite.Sprite):
+    def move_toward(self, target_x, target_y):
+        """Move player toward a target point (used by touch controls).
+        The player follows the finger but stops when close enough."""
+        cx, cy = self.rect.centerx, self.rect.centery
+        diff_x = target_x - cx
+        diff_y = target_y - cy
+        dist = (diff_x ** 2 + diff_y ** 2) ** 0.5
+        if dist < 4:
+            return  # Close enough, don't jitter
+        # Normalize and apply speed
+        dx = diff_x / dist
+        dy = diff_y / dist
+        self.move(dx, dy)class Enemy(pygame.sprite.Sprite):
     """Enemy entity"""
     def __init__(self, x, y, image, screen_width, level=1):
         super().__init__()
