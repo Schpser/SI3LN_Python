@@ -175,17 +175,28 @@ def test_get_players():
     print_info("Testing get all players...")
     
     try:
+        # basic listing
         response = requests.get(f"{GAME_URL}/players", headers=get_auth_headers())
-        
         if response.status_code == 200:
             players = response.json()
             print_success(f"Retrieved {len(players)} players")
             if players:
                 print_info(f"Sample: {players[0]['username']}")
-            return True
         else:
             print_error(f"Failed to get players: {response.status_code}")
             return False
+
+        # pagination: limit=1 should return at most one
+        response = requests.get(
+            f"{GAME_URL}/players?limit=1&offset=0", headers=get_auth_headers()
+        )
+        if response.status_code == 200 and len(response.json()) <= 1:
+            print_success("Pagination (limit=1) works")
+        else:
+            print_error("Pagination test failed")
+            return False
+
+        return True
     except Exception as e:
         print_error(f"Error getting players: {str(e)}")
         return False
@@ -267,10 +278,21 @@ def test_get_sessions():
             print_success(f"Retrieved {len(sessions)} sessions")
             if sessions:
                 print_info(f"Latest session score: {sessions[0]['score']}")
-            return True
         else:
             print_error(f"Failed to get sessions: {response.status_code}")
             return False
+
+        # pagination sanity check
+        response = requests.get(
+            f"{GAME_URL}/sessions?limit=1&offset=0", headers=get_auth_headers()
+        )
+        if response.status_code == 200 and len(response.json()) <= 1:
+            print_success("Session pagination works")
+        else:
+            print_error("Session pagination test failed")
+            return False
+
+        return True
     except Exception as e:
         print_error(f"Error getting sessions: {str(e)}")
         return False
