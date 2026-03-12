@@ -91,9 +91,19 @@ class InputField:
         self.cursor_visible = True
         self.cursor_timer = 0
     
-    def handle_event(self, event):
+    def handle_event(self, event, pos=None):
+        """Handle input events.
+
+        Args:
+            event: A pygame event.
+            pos:   Optional pre-transformed mouse position in reference
+                   (canvas) space.  When provided it is used instead of
+                   event.pos for hit-testing, which is necessary when the
+                   game uses a ResolutionManager virtual canvas.
+        """
+        check_pos = pos if pos is not None else event.pos
         if event.type == pygame.MOUSEBUTTONDOWN:
-            self.active = self.rect.collidepoint(event.pos)
+            self.active = self.rect.collidepoint(check_pos)
         
         if event.type == pygame.KEYDOWN and self.active:
             if event.key == pygame.K_BACKSPACE:

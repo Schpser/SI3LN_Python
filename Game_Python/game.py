@@ -7,6 +7,7 @@ import pygame
 import random
 import sys
 from constants import *
+from resolution_manager import ResolutionManager
 from utils import load_image, draw_text, load_enemy_images, load_boss_images, create_bullet_surface
 from auth import AuthSystem
 from scores import ScoreManager
@@ -26,12 +27,26 @@ class Game:
         self.screen_info = pygame.display.Info()
         self.screen_width = DEFAULT_SCREEN_WIDTH
         self.screen_height = DEFAULT_SCREEN_HEIGHT
-        self.screen = pygame.display.set_mode(
+        # Real display surface – only used for the final blit in draw()
+        self._display = pygame.display.set_mode(
             (self.screen_width, self.screen_height),
             pygame.SCALED | pygame.RESIZABLE
         )
         pygame.display.set_caption("S I 3 L N")
-        
+
+        # ResolutionManager: scale factor S = min(W/1280, H/720)
+        # rm.canvas is the 1280×720 reference surface; all drawing targets it.
+        # rm.present(_display) scales + centres it on the real window each frame.
+        self.rm = ResolutionManager(self.screen_width, self.screen_height)
+        # self.screen always points to the reference canvas so every existing
+        # draw call (self.screen.blit / pygame.draw…) writes to reference space.
+        self.screen = self.rm.canvas
+
+        # screen_width / screen_height stay fixed at REF values from here on;
+        # actual window size is tracked exclusively in self.rm.
+        self.screen_width = REF_WIDTH
+        self.screen_height = REF_HEIGHT
+
         self.clock = pygame.time.Clock()
         self.running = True
         
@@ -188,21 +203,37 @@ class Game:
         self.current_enemy_images = self.enemy_images.get("Space", [])
     
     def create_ui(self):
-        """Create all UI elements"""
-        cx = self.screen_width // 2
-        cy = self.screen_height // 2
-        
+        """Create all UI elements in reference (1280×720) space.
+
+        Portrait mode (rm.is_portrait) stacks elements that would
+        otherwise overflow a narrow screen vertically at the bottom-centre
+        instead of horizontally in the bottom-right corner.
+        """
+        cx = self.rm.cx   # 640 – horizontal centre of reference canvas
+        cy = self.rm.cy   # 360 – vertical centre of reference canvas
+
         # Main menu buttons - Style arcade avec fond transparent
-        self.btn_start = Button(cx, cy - 40, 250, 70, "START", 
+        self.btn_start = Button(cx, cy - 40, 250, 70, "START",
                                self.font_medium, bg_color=None, text_color=WHITE, border_color=WHITE)
         self.btn_continue = Button(cx, cy + 50, 250, 70, "PLAY",
                                    self.font_medium, bg_color=None, text_color=WHITE, border_color=WHITE)
-        self.btn_help = Button(self.screen_width - 100, self.screen_height - 70,
-                              150, 50, "AIDE", self.font_small, bg_color=None, text_color=WHITE, border_color=WHITE)
-        self.btn_game = Button(self.screen_width - 100, self.screen_height - 130,
-                              150, 50, "GAME", self.font_small, bg_color=None, text_color=WHITE, border_color=WHITE)
-        self.btn_quit = Button(self.screen_width - 100, self.screen_height - 190,
-                              150, 50, "QUITTER", self.font_small, bg_color=None, text_color=WHITE, border_color=WHITE)
+
+        if self.rm.is_portrait:
+            # Portrait: stack the three utility buttons vertically at bottom-centre
+            self.btn_help = Button(cx, REF_HEIGHT - 175,
+                                  150, 50, "AIDE", self.font_small, bg_color=None, text_color=WHITE, border_color=WHITE)
+            self.btn_game = Button(cx, REF_HEIGHT - 115,
+                                  150, 50, "GAME", self.font_small, bg_color=None, text_color=WHITE, border_color=WHITE)
+            self.btn_quit = Button(cx, REF_HEIGHT - 55,
+                                  150, 50, "QUITTER", self.font_small, bg_color=None, text_color=WHITE, border_color=WHITE)
+        else:
+            # Landscape: original bottom-right corner layout
+            self.btn_help = Button(REF_WIDTH - 100, REF_HEIGHT - 70,
+                                  150, 50, "AIDE", self.font_small, bg_color=None, text_color=WHITE, border_color=WHITE)
+            self.btn_game = Button(REF_WIDTH - 100, REF_HEIGHT - 130,
+                                  150, 50, "GAME", self.font_small, bg_color=None, text_color=WHITE, border_color=WHITE)
+            self.btn_quit = Button(REF_WIDTH - 100, REF_HEIGHT - 190,
+                                  150, 50, "QUITTER", self.font_small, bg_color=None, text_color=WHITE, border_color=WHITE)
         
         # Login screen
         self.login_username = InputField(cx - 150, cy - 80, 300, 45,
@@ -233,13 +264,21 @@ class Game:
         self.btn_back_login = Button(cx, cy + 230, 200, 50, "RETOUR",
                                      self.font_small)
         
-        # Game over buttons
-        self.btn_restart = Button(cx - 130, self.screen_height - 80,
-                                 200, 60, "RESTART", self.font_medium,
-                                 bg_color=ORANGE)
-        self.btn_finish = Button(cx + 130, self.screen_height - 80,
-                                200, 60, "FINISH", self.font_medium,
-                                bg_color=RED)
+        # Game over buttons – side-by-side in landscape, stacked in portrait
+        if self.rm.is_portrait:
+            self.btn_restart = Button(cx, REF_HEIGHT - 130,
+                                     200, 60, "RESTART", self.font_medium,
+                                     bg_color=ORANGE)
+            self.btn_finish = Button(cx, REF_HEIGHT - 60,
+                                    200, 60, "FINISH", self.font_medium,
+                                    bg_color=RED)
+        else:
+            self.btn_restart = Button(cx - 130, REF_HEIGHT - 80,
+                                     200, 60, "RESTART", self.font_medium,
+                                     bg_color=ORANGE)
+            self.btn_finish = Button(cx + 130, REF_HEIGHT - 80,
+                                    200, 60, "FINISH", self.font_medium,
+                                    bg_color=RED)
         
         # Level win buttons
         self.btn_next_level = Button(cx, cy + 100, 250, 70, "NIVEAU SUIVANT",
@@ -284,10 +323,10 @@ class Game:
             "et battez les boss!"
         ]
         
-        self.popup_help = PopUp(400, 500, "AIDE", help_content, 
-                               self.screen_width, self.screen_height, self.font_small, self.font_large)
+        self.popup_help = PopUp(400, 500, "AIDE", help_content,
+                               REF_WIDTH, REF_HEIGHT, self.font_small, self.font_large)
         self.popup_game = PopUp(400, 500, "A PROPOS DU JEU", game_content,
-                               self.screen_width, self.screen_height, self.font_small, self.font_large)
+                               REF_WIDTH, REF_HEIGHT, self.font_small, self.font_large)
     
     def update_profile_icon(self):
         """Update profile icon with current character"""
@@ -312,6 +351,31 @@ class Game:
         self.message_color = color
         self.message_timer = duration
     
+    def _transform_event(self, event: pygame.event.Event) -> pygame.event.Event:
+        """Return a copy of a mouse event with pos in reference (canvas) space.
+
+        MOUSEBUTTONDOWN / UP / MOTION events carry screen-space coordinates.
+        Sub-systems (LevelSelector, ProfileScreen) store their rects in
+        reference space (1280×720 canvas), so we must remap before dispatch.
+
+        Non-mouse events are returned unchanged.
+        """
+        if event.type not in (
+            pygame.MOUSEBUTTONDOWN,
+            pygame.MOUSEBUTTONUP,
+            pygame.MOUSEMOTION,
+        ):
+            return event
+        if not hasattr(event, "pos"):
+            return event
+
+        ref_pos = self.rm.screen_to_ref(*event.pos)
+        attrs: dict = {"pos": ref_pos}
+        for attr in ("button", "buttons", "rel", "touch", "which"):
+            if hasattr(event, attr):
+                attrs[attr] = getattr(event, attr)
+        return pygame.event.Event(event.type, attrs)
+
     def handle_events(self):
         """Handle all game events"""
         for event in pygame.event.get():
@@ -345,13 +409,13 @@ class Game:
             
             # Profile screen has priority
             if self.profile_screen.active:
-                if self.profile_screen.handle_event(event):
+                if self.profile_screen.handle_event(self._transform_event(event)):
                     self.update_profile_icon()
                 continue
-            
+
             # Level selector
             if self.level_selector.active:
-                result = self.level_selector.handle_event(event)
+                result = self.level_selector.handle_event(self._transform_event(event))
                 if result:
                     print(f"[DEBUG] Level selector returned: {result}")
                     if result[0] == "START_LEVEL":
@@ -381,7 +445,7 @@ class Game:
     def handle_main_menu_events(self, event):
         """Handle main menu events"""
         if event.type == pygame.MOUSEBUTTONDOWN:
-            pos = event.pos
+            pos = self.rm.screen_to_ref(*event.pos)
             
             if self.btn_start.is_clicked(pos):
                 self.auth.login_as_guest(self.selected_character)
@@ -516,6 +580,7 @@ class Game:
                 self.mega_shot()
         
         if event.type == pygame.MOUSEBUTTONDOWN:
+<<<<<<< HEAD
             pos = event.pos
             
             # On-screen touch buttons (fire / shield / mega)
@@ -536,6 +601,10 @@ class Game:
             # Start dragging to move
             self.touch_move_pos = pos
             
+=======
+            pos = self.rm.screen_to_ref(*event.pos)
+
+>>>>>>> 8af4e2f (Implement responsive design with ResolutionManager and update UI components)
             # Profile icon
             if self.profile_icon and self.profile_icon.is_clicked(pos):
                 self.prev_state = self.state
@@ -544,7 +613,7 @@ class Game:
     def handle_game_over_events(self, event):
         """Handle game over screen events"""
         if event.type == pygame.MOUSEBUTTONDOWN:
-            pos = event.pos
+            pos = self.rm.screen_to_ref(*event.pos)
             
             if self.btn_restart.is_clicked(pos):
                 self._end_api_session()
@@ -562,7 +631,7 @@ class Game:
     def handle_level_win_events(self, event):
         """Handle level win screen events"""
         if event.type == pygame.MOUSEBUTTONDOWN:
-            pos = event.pos
+            pos = self.rm.screen_to_ref(*event.pos)
             
             if self.btn_next_level.is_clicked(pos):
                 self.current_level += 1
@@ -847,13 +916,14 @@ class Game:
                 self.update_profile_icon()
             return
         
-        # Update level selector
+        # Update level selector (pass reference-space mouse pos for hover)
         if self.level_selector.active:
-            self.level_selector.update()
+            self.level_selector.update(self.rm.screen_to_ref(*pygame.mouse.get_pos()))
             return
         
-        # Update UI buttons
-        mouse_pos = pygame.mouse.get_pos()
+        # Transform current mouse position to reference (canvas) space so
+        # all hover/update calls receive coordinates that match the UI rects.
+        mouse_pos = self.rm.screen_to_ref(*pygame.mouse.get_pos())
         
         if self.state == STATE_MAIN_MENU:
             self.btn_start.update(mouse_pos)
@@ -1071,6 +1141,8 @@ class Game:
             pygame.draw.rect(self.screen, (0, 0, 0, 200), bg_rect, border_radius=5)
             self.screen.blit(msg_surf, msg_rect)
         
+        # Scale the reference canvas to the real window (letterboxing) and flip
+        self.rm.present(self._display)
         pygame.display.flip()
     
     def draw_main_menu(self):
@@ -1265,97 +1337,51 @@ class Game:
         self.btn_level_select.draw(self.screen)
     
     def toggle_fullscreen(self):
-        """Toggle fullscreen mode"""
+        """Toggle fullscreen mode.
+
+        Only the real display (_display) changes.  The reference canvas
+        (self.screen) stays at 1280×720 – rm.present() handles the scaling.
+        """
         self.is_fullscreen = not self.is_fullscreen
-        
+
         if self.is_fullscreen:
+<<<<<<< HEAD
             self.screen = pygame.display.set_mode(
                 (0, 0), pygame.FULLSCREEN | pygame.SCALED | pygame.RESIZABLE
+=======
+            self._display = pygame.display.set_mode(
+                (0, 0), pygame.FULLSCREEN | pygame.RESIZABLE
+>>>>>>> 8af4e2f (Implement responsive design with ResolutionManager and update UI components)
             )
         else:
-            self.screen = pygame.display.set_mode(
+            self._display = pygame.display.set_mode(
                 (DEFAULT_SCREEN_WIDTH, DEFAULT_SCREEN_HEIGHT),
                 pygame.SCALED | pygame.RESIZABLE
             )
-        
-        self.screen_width = self.screen.get_width()
-        self.screen_height = self.screen.get_height()
-        
-        self.load_assets()
+
+        self.rm.update(self._display.get_width(), self._display.get_height())
         self.create_ui()
-        self.profile_screen = ProfileScreen(self.screen, self.auth, self.players)
-        self.level_selector = LevelSelector(self.screen, WORLDS)
         self.update_profile_icon()
         self._build_touch_zones()
     
     def handle_resize(self, width, height):
-        """Handle window resize"""
-        self.screen_width = width
-        self.screen_height = height
-        self.screen = pygame.display.set_mode((width, height), pygame.SCALED | pygame.RESIZABLE)
-        
-        self.load_assets()
-        self.create_ui()
-        self.profile_screen = ProfileScreen(self.screen, self.auth, self.players)
-        self.level_selector = LevelSelector(self.screen, WORLDS)
-        self.update_profile_icon()
-        self._build_touch_zones()
+        """Handle window resize.
 
-    # ── Touch / mobile helpers ────────────────────────────────────────────
+        The reference canvas (self.screen, 1280×720) never changes size.
+        We only update the real display surface and the ResolutionManager
+        so that rm.present() uses the new scale factor and letterbox offsets.
+        UI elements are rebuilt when the orientation (portrait ↔ landscape)
+        changes to keep layouts appropriate for the new aspect ratio.
+        """
+        old_portrait = self.rm.is_portrait
+        self._display = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+        self.rm.update(width, height)
 
-    def _build_touch_zones(self):
-        """Pre-compute on-screen touch button rectangles.
-        Called once at init and again on every resize."""
-        sw, sh = self.screen_width, self.screen_height
-        btn_size = 70
-        margin = 20
-        # Fire button: bottom-right
-        self.touch_fire_rect = pygame.Rect(
-            sw - btn_size - margin, sh - btn_size - margin,
-            btn_size, btn_size
-        )
-        # Shield button: above fire
-        self.touch_shield_rect = pygame.Rect(
-            sw - btn_size - margin, sh - btn_size * 2 - margin * 2,
-            btn_size, btn_size
-        )
-        # Mega-shot button: above shield
-        self.touch_mega_rect = pygame.Rect(
-            sw - btn_size - margin, sh - btn_size * 3 - margin * 3,
-            btn_size, btn_size
-        )
-
-    # (Touch is handled entirely through mouse events — pygbag
-    #  automatically translates touch into MOUSEBUTTONDOWN/UP/MOTION.)
-
-    def draw_touch_controls(self):
-        """Draw translucent on-screen buttons when in gameplay state."""
-        if self.state != STATE_GAMEPLAY:
-            return
-        alpha = 90
-
-        # Fire button
-        fire_surf = pygame.Surface((self.touch_fire_rect.w, self.touch_fire_rect.h), pygame.SRCALPHA)
-        pygame.draw.rect(fire_surf, (*RED, alpha), fire_surf.get_rect(), border_radius=12)
-        lbl = self.font_small.render("FIRE", True, WHITE)
-        fire_surf.blit(lbl, lbl.get_rect(center=(fire_surf.get_width()//2, fire_surf.get_height()//2)))
-        self.screen.blit(fire_surf, self.touch_fire_rect)
-
-        # Shield button (only if bonus available)
-        if self.active_bonuses["shield"]["active"]:
-            sh_surf = pygame.Surface((self.touch_shield_rect.w, self.touch_shield_rect.h), pygame.SRCALPHA)
-            pygame.draw.rect(sh_surf, (*BLUE, alpha), sh_surf.get_rect(), border_radius=12)
-            lbl = self.font_tiny.render("SHLD", True, WHITE)
-            sh_surf.blit(lbl, lbl.get_rect(center=(sh_surf.get_width()//2, sh_surf.get_height()//2)))
-            self.screen.blit(sh_surf, self.touch_shield_rect)
-
-        # Mega-shot button (only if bonus available)
-        if self.active_bonuses["mega_shot"]["active"]:
-            mg_surf = pygame.Surface((self.touch_mega_rect.w, self.touch_mega_rect.h), pygame.SRCALPHA)
-            pygame.draw.rect(mg_surf, (*YELLOW, alpha), mg_surf.get_rect(), border_radius=12)
-            lbl = self.font_tiny.render("MEGA", True, BLACK)
-            mg_surf.blit(lbl, lbl.get_rect(center=(mg_surf.get_width()//2, mg_surf.get_height()//2)))
-            self.screen.blit(mg_surf, self.touch_mega_rect)
+        if old_portrait != self.rm.is_portrait:
+            # Orientation flipped – rebuild layout so portrait/landscape
+            # button arrangements match the new screen shape.
+            self.create_ui()
+            self.update_profile_icon()
     
     async def run(self):
         """Main game loop"""

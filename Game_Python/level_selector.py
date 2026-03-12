@@ -263,12 +263,22 @@ class LevelSelector:
         
         return None
     
-    def update(self):
-        """Update level selector"""
+    def update(self, mouse_pos=None):
+        """Update level selector.
+
+        Args:
+            mouse_pos: Pre-transformed mouse position in reference
+                       (canvas) space supplied by the caller.  When
+                       omitted the raw screen position from
+                       pygame.mouse.get_pos() is used directly (legacy
+                       behaviour, correct only when not using a
+                       ResolutionManager canvas).
+        """
         if not self.active:
             return
-        
-        mouse_pos = pygame.mouse.get_pos()
+
+        if mouse_pos is None:
+            mouse_pos = pygame.mouse.get_pos()
         
         if self.view == "WORLDS":
             # Update world cards
