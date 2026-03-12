@@ -57,43 +57,21 @@ Classic arcade games offer an ephemeral experience: players have no insight into
 
 ```mermaid
 graph TB
-    subgraph Docker["Docker Compose Network"]
-        direction TB
-        
-        subgraph Frontend["Nginx Frontend :80"]
-            DASH["ARCAD3X Dashboard<br/>HTML / CSS / JS SPA"]
-        end
-        
-        subgraph API["Django API :8000"]
-            NINJA["Django Ninja REST API<br/>+ JWT Auth + Security Facade"]
-        end
-        
-        subgraph DB["PostgreSQL :5432"]
-            PG[("Player · GameSession<br/>World · Achievement<br/>PlayerAchievement")]
-        end
-        
-        subgraph Cache["Redis :6379"]
-            REDIS[("Rate Limiting<br/>Token Blacklist")]
-        end
-        
-        subgraph Builder["Pygbag Builder"]
-            WASM["Pygame → WebAssembly<br/>SI3LN Game Build"]
-        end
-    end
-    
-    PLAYER(["🎮 Player Browser"]) -->|"HTTP / fetch"| DASH
-    DASH -->|"REST API calls<br/>Bearer JWT"| NINJA
-    NINJA -->|"Django ORM"| PG
-    NINJA -->|"Rate limit checks"| REDIS
-    WASM -.->|"Built game served via"| DASH
-    GAME(["🕹️ Pygame Client"]) -->|"JWT-authenticated<br/>POST/PATCH"| NINJA
+    Player["Player Browser"] -->|HTTP fetch| Frontend
+    GameClient["Pygame Client"] -->|JWT auth POST/PATCH| API
 
-    style Docker fill:#1a1a2e,stroke:#16213e,color:#fff
-    style Frontend fill:#0f3460,stroke:#533483,color:#fff
-    style API fill:#533483,stroke:#e94560,color:#fff
-    style DB fill:#16213e,stroke:#0f3460,color:#fff
-    style Cache fill:#1a1a2e,stroke:#e94560,color:#fff
-    style Builder fill:#1a1a2e,stroke:#533483,color:#fff
+    subgraph Docker Compose Network
+        Frontend["Nginx Frontend :80<br/>ARCAD3X Dashboard SPA"]
+        API["Django Ninja API :8000<br/>JWT Auth + Security Facade"]
+        DB[("PostgreSQL :5432<br/>Player, GameSession, World,<br/>Achievement")]
+        Redis[("Redis :6379<br/>Rate Limiting, Token Blacklist")]
+        Builder["Pygbag Builder<br/>Pygame to WebAssembly"]
+    end
+
+    Frontend -->|REST API calls<br/>Bearer JWT| API
+    API -->|Django ORM| DB
+    API -->|Rate limit checks| Redis
+    Builder -.->|Built game served via| Frontend
 ```
 
 ### Sequence Diagram (Typical Game Session)
