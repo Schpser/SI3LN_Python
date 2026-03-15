@@ -254,27 +254,27 @@ class AuthManager {
             input.classList.add('invalid');
             input.classList.remove('valid');
             if (validation) {
-                validation.innerHTML = '❌ Ce pseudo contient des termes inappropriés';
+                validation.innerHTML = window.i18n.t('signup.pseudoProfanity');
                 validation.style.color = '#ff4444';
             }
             return false;
         }
-        
+
         // Vérifier format
         const isValid = /^[A-Za-z0-9_]+$/.test(value) && value.length >= 3;
-        
+
         if (isValid) {
             input.classList.add('valid');
             input.classList.remove('invalid');
             if (validation) {
-                validation.innerHTML = '✓ Pseudo disponible';
+                validation.innerHTML = window.i18n.t('signup.pseudoAvailable');
                 validation.style.color = '#44ff44';
             }
         } else {
             input.classList.add('invalid');
             input.classList.remove('valid');
             if (validation) {
-                validation.innerHTML = '❌ 3 caractères minimum, uniquement lettres, chiffres et _';
+                validation.innerHTML = window.i18n.t('signup.pseudoFormat');
                 validation.style.color = '#ff4444';
             }
         }
@@ -335,14 +335,14 @@ class AuthManager {
             confirm.classList.add('valid');
             confirm.classList.remove('invalid');
             if (message) {
-                message.innerHTML = '✓ Les mots de passe correspondent';
+                message.innerHTML = window.i18n.t('signup.passwordsMatch');
                 message.style.color = '#44ff44';
             }
         } else {
             confirm.classList.add('invalid');
             confirm.classList.remove('valid');
             if (message) {
-                message.innerHTML = '❌ Les mots de passe ne correspondent pas';
+                message.innerHTML = window.i18n.t('signup.passwordsNoMatch');
                 message.style.color = '#ff4444';
             }
         }

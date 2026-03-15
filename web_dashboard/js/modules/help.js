@@ -21,6 +21,13 @@ class HelpManager {
         if (backBtn) {
             backBtn.addEventListener('click', () => this.showHelpMenu());
         }
+
+        // Re-render current detail view on language change
+        window.addEventListener('languageChanged', () => {
+            if (this.currentView !== 'menu') {
+                this.showHelpDetail(this.currentView);
+            }
+        });
     }
 
     showHelpMenu() {
@@ -59,176 +66,176 @@ class HelpManager {
     }
 
     getGamesTutorialContent() {
+        const t = (k) => window.i18n.t(k);
         return `
-            <h2>🎮 Games Tutorials</h2>
+            <h2>${t('help.gamesPageTitle')}</h2>
             <div class="tutorial-section">
-                <h3>SI3LN - Space Invaders III Last Night</h3>
-                <h4>📖 How to Play</h4>
-                <p>SI3LN is a modern take on the classic Space Invaders arcade game.</p>
-                <h4>🎮 Controls</h4>
+                <h3>${t('help.si3lnTitle')}</h3>
+                <h4>${t('help.howToPlay')}</h4>
+                <p>${t('help.si3lnDesc')}</p>
+                <h4>${t('help.controlsTitle')}</h4>
                 <ul>
-                    <li><strong>Arrow Keys</strong> or <strong>WASD</strong> - Move your ship left/right</li>
-                    <li><strong>Space Bar</strong> - Shoot</li>
-                    <li><strong>P</strong> - Pause game</li>
-                    <li><strong>ESC</strong> - Exit to menu</li>
+                    <li>${t('help.ctrlMove')}</li>
+                    <li>${t('help.ctrlShoot')}</li>
+                    <li>${t('help.ctrlPause')}</li>
+                    <li>${t('help.ctrlExit')}</li>
                 </ul>
-                <h4>🎯 Gameplay</h4>
+                <h4>${t('help.gameplayTitle')}</h4>
                 <ul>
-                    <li>Destroy all alien invaders before they reach the bottom</li>
-                    <li>Use barriers for cover, but they degrade over time</li>
-                    <li>Watch out for the UFO - it gives bonus points!</li>
-                    <li>Complete levels to unlock new worlds</li>
+                    <li>${t('help.gameplay1')}</li>
+                    <li>${t('help.gameplay2')}</li>
+                    <li>${t('help.gameplay3')}</li>
+                    <li>${t('help.gameplay4')}</li>
                 </ul>
-                <h4>🏆 Scoring</h4>
+                <h4>${t('help.scoringTitle')}</h4>
                 <ul>
-                    <li>Small aliens: 10 points</li>
-                    <li>Medium aliens: 20 points</li>
-                    <li>Large aliens: 30 points</li>
-                    <li>UFO: 50-300 points (random)</li>
-                    <li>Level completion bonus: 1000 points</li>
+                    <li>${t('help.score1')}</li>
+                    <li>${t('help.score2')}</li>
+                    <li>${t('help.score3')}</li>
+                    <li>${t('help.score4')}</li>
+                    <li>${t('help.score5')}</li>
                 </ul>
-                <h4>💡 Tips & Tricks</h4>
+                <h4>${t('help.tipsTitle')}</h4>
                 <ul>
-                    <li>Take your time - accuracy is more important than speed</li>
-                    <li>Use barriers strategically</li>
-                    <li>Watch the alien movement patterns</li>
-                    <li>Save power-ups for later levels</li>
-                    <li>Register an account to save your high scores!</li>
+                    <li>${t('help.tip1')}</li>
+                    <li>${t('help.tip2')}</li>
+                    <li>${t('help.tip3')}</li>
+                    <li>${t('help.tip4')}</li>
+                    <li>${t('help.tip5')}</li>
                 </ul>
             </div>
         `;
     }
 
     getReportPlayerContent() {
+        const t = (k) => window.i18n.t(k);
         return `
-            <h2>⚠️ Report Player</h2>
-            <p>Help us maintain a safe and respectful community. Fill in the form and 
-               <strong>download</strong> the report file to send it to our moderation team.</p>
-            
+            <h2>${t('help.reportTitle')}</h2>
+            <p>${t('help.reportDesc')}</p>
+
             <form class="help-form" id="reportPlayerForm">
                 <div class="help-form-group">
-                    <label for="reportedUsername">Player Username *</label>
-                    <input type="text" id="reportedUsername" class="help-form-input" 
-                           placeholder="Enter the username to report" required>
+                    <label for="reportedUsername">${t('help.reportUsernameLbl')}</label>
+                    <input type="text" id="reportedUsername" class="help-form-input"
+                           placeholder="${t('help.reportUsernamePh')}" required>
                 </div>
-                
+
                 <div class="help-form-group">
-                    <label for="reportReason">Reason for Report *</label>
+                    <label for="reportReason">${t('help.reportReasonLbl')}</label>
                     <select id="reportReason" class="help-form-select" required>
-                        <option value="">Select a reason</option>
-                        <option value="offensive_username">Offensive Username</option>
-                        <option value="offensive_description">Offensive Profile Description</option>
-                        <option value="harassment">Harassment</option>
-                        <option value="cheating">Cheating/Hacking</option>
-                        <option value="spam">Spam</option>
-                        <option value="other">Other</option>
+                        <option value="">${t('help.reportReasonPh')}</option>
+                        <option value="offensive_username">${t('help.reportReasonOffUser')}</option>
+                        <option value="offensive_description">${t('help.reportReasonOffDesc')}</option>
+                        <option value="harassment">${t('help.reportReasonHaras')}</option>
+                        <option value="cheating">${t('help.reportReasonCheat')}</option>
+                        <option value="spam">${t('help.reportReasonSpam')}</option>
+                        <option value="other">${t('help.reportReasonOther')}</option>
                     </select>
                 </div>
-                
+
                 <div class="help-form-group">
-                    <label for="reportDetails">Details *</label>
-                    <textarea id="reportDetails" class="help-form-textarea" 
-                              placeholder="Please provide details about the incident..." required></textarea>
+                    <label for="reportDetails">${t('help.reportDetailsLbl')}</label>
+                    <textarea id="reportDetails" class="help-form-textarea"
+                              placeholder="${t('help.reportDetailsPh')}" required></textarea>
                 </div>
-                
+
                 <div class="help-form-group">
-                    <label for="reportEvidence">Evidence (Optional)</label>
-                    <textarea id="reportEvidence" class="help-form-textarea" 
-                              placeholder="Describe any evidence (screenshots taken, date/time, etc.)"></textarea>
+                    <label for="reportEvidence">${t('help.reportEvidenceLbl')}</label>
+                    <textarea id="reportEvidence" class="help-form-textarea"
+                              placeholder="${t('help.reportEvidencePh')}"></textarea>
                 </div>
-                
+
                 <button type="submit" class="help-form-submit">
-                    📥 Download Report File
+                    ${t('help.reportSubmitBtn')}
                 </button>
             </form>
-            
+
             <p class="report-note">
-                <strong>Note:</strong> The report will be downloaded as a <code>.txt</code> file. 
-                You can email it to <strong>support@arcad3x.com</strong> or upload it via the admin panel.
-                False reports may result in action against your account.
+                ${t('help.reportNote')}
             </p>
         `;
     }
 
     getBugReportContent() {
+        const t = (k) => window.i18n.t(k);
         return `
-            <h2>🐛 Report a Bug</h2>
-            <p>Found a bug? Fill in the form and <strong>download</strong> the bug report file.</p>
-            
+            <h2>${t('help.bugPageTitle')}</h2>
+            <p>${t('help.bugDesc')}</p>
+
             <form class="help-form" id="bugReportForm">
                 <div class="help-form-group">
-                    <label for="bugTitle">Bug Title *</label>
-                    <input type="text" id="bugTitle" class="help-form-input" 
-                           placeholder="Brief description of the bug" required>
+                    <label for="bugTitle">${t('help.bugTitleLbl')}</label>
+                    <input type="text" id="bugTitle" class="help-form-input"
+                           placeholder="${t('help.bugTitlePh')}" required>
                 </div>
-                
+
                 <div class="help-form-group">
-                    <label for="bugCategory">Category *</label>
+                    <label for="bugCategory">${t('help.bugCategoryLbl')}</label>
                     <select id="bugCategory" class="help-form-select" required>
-                        <option value="">Select category</option>
-                        <option value="gameplay">Gameplay</option>
-                        <option value="ui">User Interface</option>
-                        <option value="login">Login/Authentication</option>
-                        <option value="profile">Profile</option>
-                        <option value="graphics">Graphics/Visual</option>
-                        <option value="audio">Audio</option>
-                        <option value="performance">Performance</option>
-                        <option value="other">Other</option>
+                        <option value="">${t('help.bugCategoryPh')}</option>
+                        <option value="gameplay">${t('help.bugCatGameplay')}</option>
+                        <option value="ui">${t('help.bugCatUI')}</option>
+                        <option value="login">${t('help.bugCatLogin')}</option>
+                        <option value="profile">${t('help.bugCatProfile')}</option>
+                        <option value="graphics">${t('help.bugCatGraphics')}</option>
+                        <option value="audio">${t('help.bugCatAudio')}</option>
+                        <option value="performance">${t('help.bugCatPerf')}</option>
+                        <option value="other">${t('help.bugCatOther')}</option>
                     </select>
                 </div>
-                
+
                 <div class="help-form-group">
-                    <label for="bugDescription">Description *</label>
-                    <textarea id="bugDescription" class="help-form-textarea" 
-                              placeholder="What happened? What did you expect to happen?" required></textarea>
+                    <label for="bugDescription">${t('help.bugDescLbl')}</label>
+                    <textarea id="bugDescription" class="help-form-textarea"
+                              placeholder="${t('help.bugDescPh')}" required></textarea>
                 </div>
-                
+
                 <div class="help-form-group">
-                    <label for="bugSteps">Steps to Reproduce</label>
-                    <textarea id="bugSteps" class="help-form-textarea" 
-                              placeholder="1. Go to...\n2. Click on...\n3. See error"></textarea>
+                    <label for="bugSteps">${t('help.bugStepsLbl')}</label>
+                    <textarea id="bugSteps" class="help-form-textarea"
+                              placeholder="${t('help.bugStepsPh')}"></textarea>
                 </div>
-                
+
                 <div class="help-form-group">
-                    <label for="bugBrowser">Browser & OS</label>
-                    <input type="text" id="bugBrowser" class="help-form-input" 
-                           placeholder="e.g., Chrome 120 on Windows 11"
+                    <label for="bugBrowser">${t('help.bugBrowserLbl')}</label>
+                    <input type="text" id="bugBrowser" class="help-form-input"
+                           placeholder="${t('help.bugBrowserPh')}"
                            value="">
                 </div>
-                
+
                 <button type="submit" class="help-form-submit">
-                    📥 Download Bug Report
+                    ${t('help.bugSubmitBtn')}
                 </button>
             </form>
         `;
     }
 
     getSupportContent() {
+        const t = (k) => window.i18n.t(k);
         return `
-            <h2>💝 Support ARCAD3X</h2>
+            <h2>${t('help.supportTitle')}</h2>
             <div class="support-content-wrapper">
                 <div class="support-icon">🎮</div>
-                <h3>Thank You for Your Support!</h3>
+                <h3>${t('help.supportThankYou')}</h3>
                 <p class="support-description">
-                    ARCAD3X is a passion project brought to life by dedicated developers. 
-                    Your support helps us continue improving the platform and creating more amazing games.
+                    ${t('help.supportDesc2')}
                 </p>
                 <div class="support-ways">
-                    <h4>Ways to Support Us</h4>
+                    <h4>${t('help.supportWaysTitle')}</h4>
                     <ul class="support-list">
-                        <li>⭐ Play our games and share with friends</li>
-                        <li>💬 Provide feedback and report bugs</li>
-                        <li>📢 Follow us on social media</li>
-                        <li>💰 Financial support (Coming Soon)</li>
+                        <li>${t('help.supportWay1')}</li>
+                        <li>${t('help.supportWay2')}</li>
+                        <li>${t('help.supportWay3')}</li>
+                        <li>${t('help.supportWay4')}</li>
                     </ul>
                 </div>
                 <div class="support-payment-notice">
-                    <p><strong>💳 Payment options (PayPal, Stripe) coming soon!</strong></p>
-                    <p class="payment-hint">We're working on integrating secure payment methods to accept donations.</p>
+                    <p><strong>${t('help.supportPaymentTitle')}</strong></p>
+                    <p class="payment-hint">${t('help.supportPaymentHint')}</p>
                 </div>
                 <p class="support-footer">
-                    Created with ❤️ by Hugex & Schps<br>
-                    © 2026 ARCAD3X - All rights reserved
+                    ${t('help.supportFooter')}<br>
+                    ${t('about.copyright')}
                 </p>
             </div>
         `;

@@ -68,6 +68,19 @@ class AppManager {
             );
         }
         
+        // Re-render dynamic content when language changes
+        window.addEventListener('languageChanged', () => {
+            // Re-render dynamic content if we're on those pages
+            const aboutPage = document.getElementById('about-page');
+            if (aboutPage && !aboutPage.classList.contains('hidden')) {
+                this.loadAbout();
+            }
+            const settingsPage = document.getElementById('settings-page');
+            if (settingsPage && !settingsPage.classList.contains('hidden')) {
+                this.loadSettings();
+            }
+        });
+
         // Check auth and load initial data
         this.checkAuth();
         this.loadHomeData();
@@ -273,7 +286,7 @@ class AppManager {
         if (!dropdown) return;
         
         if (!results || results.length === 0) {
-            dropdown.innerHTML = '<div class="search-no-results">No results found</div>';
+            dropdown.innerHTML = `<div class="search-no-results">${window.i18n.t('search.noResults')}</div>`;
             dropdown.classList.add('visible');
             return;
         }
@@ -391,7 +404,7 @@ class AppManager {
             const leaderboardDiv = document.getElementById('leaderboard');
             if (Array.isArray(leaderboardData) && leaderboardDiv) {
                 if (leaderboardData.length === 0) {
-                    leaderboardDiv.innerHTML = '<p>No scores yet. Be the first to play!</p>';
+                    leaderboardDiv.innerHTML = `<p>${window.i18n.t('home.noScores')}</p>`;
                 } else {
                     leaderboardDiv.innerHTML = leaderboardData
                         .map((entry, i) => `<div class="lb-entry">
@@ -404,7 +417,7 @@ class AppManager {
             }
         } catch (error) {
             const leaderboardDiv = document.getElementById('leaderboard');
-            if (leaderboardDiv) leaderboardDiv.innerHTML = '<p>Could not load leaderboard.</p>';
+            if (leaderboardDiv) leaderboardDiv.innerHTML = `<p>${window.i18n.t('home.leaderboardError')}</p>`;
         }
 
         // Show welcome message if logged in
@@ -418,13 +431,13 @@ class AppManager {
                     : await window.api.getCurrentPlayer();
                 const profileDiv = document.getElementById('profile');
                 if (profileDiv && profileData) {
-                    profileDiv.innerHTML = `Welcome, ${profileData.username || 'Player'}!`;
+                    profileDiv.innerHTML = `${window.i18n.t('home.welcomeUser')} ${profileData.username || 'Player'}!`;
                 }
             } catch (error) {
                 const profileDiv = document.getElementById('profile');
                 if (profileDiv) {
                     const username = facade?.getLocalUsername() || window.api?.getLocalUsername();
-                    profileDiv.innerHTML = username ? `Welcome, ${username}!` : 'Please log in';
+                    profileDiv.innerHTML = username ? `${window.i18n.t('home.welcomeUser')} ${username}!` : window.i18n.t('home.pleaseLogin');
                 }
             }
         }
@@ -436,10 +449,11 @@ class AppManager {
             const version = window.APP_CONFIG?.VERSION || '1.0.0';
             el.innerHTML = `
                 <div class="about-section">
-                    <h2>À propos de nous</h2>
-                    <p>Projet SI3LN par Hugex & Schps...</p>
-                    <p>FullStack gaming platform</p>
+                    <h2>${window.i18n.t('about.title')}</h2>
+                    <p>${window.i18n.t('about.description')}</p>
+                    <p>${window.i18n.t('about.platform')}</p>
                     <p class="version-info">Version ${version}</p>
+                    <p>${window.i18n.t('about.copyright')}</p>
                 </div>
             `;
         }

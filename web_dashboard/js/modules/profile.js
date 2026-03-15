@@ -52,7 +52,7 @@ class ProfileManager {
             if (!scoresList) return;
 
             if (!sessions || sessions.length === 0) {
-                scoresList.innerHTML = '<div class="score-item">No games played yet!</div>';
+                scoresList.innerHTML = `<div class="score-item">${window.i18n.t('profile.noGamesPlayed')}</div>`;
                 return;
             }
 
@@ -70,7 +70,7 @@ class ProfileManager {
             ).join('');
         } catch (error) {
             const scoresList = document.getElementById('bestScoresList');
-            if (scoresList) scoresList.innerHTML = '<div class="score-item">Login to see scores</div>';
+            if (scoresList) scoresList.innerHTML = `<div class="score-item">${window.i18n.t('profile.loginToSeeScores')}</div>`;
         }
     }
 
@@ -280,7 +280,7 @@ class ProfileManager {
         document.getElementById('profileDisplayName').textContent = username || 'Guest';
         document.getElementById('profileUsername').textContent = username || 'guest';
         document.getElementById('userBio').innerHTML = '<p class="bio-placeholder">User not logged in</p>';
-        document.getElementById('bestScoresList').innerHTML = '<div class="score-item">Login to see scores</div>';
+        document.getElementById('bestScoresList').innerHTML = `<div class="score-item">${window.i18n.t('profile.loginToSeeScores')}</div>`;
         document.getElementById('favoritesGrid').innerHTML = '<div class="favorite-item">Login to see favorites</div>';
         document.getElementById('editProfileBtn').classList.add('hidden');
     }

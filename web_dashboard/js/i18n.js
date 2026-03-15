@@ -33,7 +33,11 @@ class I18nManager {
                     playNow: "Play now →",
                     leaderboard: "Leaderboard",
                     playerProfile: "Player Profile",
-                    loading: "Loading..."
+                    loading: "Loading...",
+                    noScores: "No scores yet. Be the first to play!",
+                    leaderboardError: "Could not load leaderboard.",
+                    welcomeUser: "Welcome,",
+                    pleaseLogin: "Please log in"
                 },
                 // Login page
                 login: {
@@ -66,7 +70,12 @@ class I18nManager {
                     termsOfService: "terms of service",
                     createButton: "Create my account",
                     alreadyHaveAccount: "Already have an account?",
-                    loginLink: "Login here"
+                    loginLink: "Login here",
+                    pseudoAvailable: "✓ Username available",
+                    pseudoProfanity: "❌ Username contains inappropriate terms",
+                    pseudoFormat: "❌ Min. 3 characters, letters, digits and _ only",
+                    passwordsMatch: "✓ Passwords match",
+                    passwordsNoMatch: "❌ Passwords do not match"
                 },
                 // Profile page
                 profile: {
@@ -82,7 +91,9 @@ class I18nManager {
                     favoriteGames: "⭐ Favorite Games",
                     multiSelectHint: "Hold Ctrl/Cmd to select multiple",
                     saveChanges: "Save Changes",
-                    cancel: "Cancel"
+                    cancel: "Cancel",
+                    noGamesPlayed: "No games played yet!",
+                    loginToSeeScores: "Log in to see your scores"
                 },
                 // Games page
                 games: {
@@ -112,7 +123,87 @@ class I18nManager {
                     support: "Support Us",
                     supportDesc: "Support the development of ARCAD3X",
                     supportBtn: "Support Project",
-                    backToMenu: "← Back to Help Menu"
+                    backToMenu: "← Back to Help Menu",
+                    gamesPageTitle: "🎮 Games Tutorials",
+                    si3lnTitle: "SI3LN - Space Invaders III Last Night",
+                    howToPlay: "📖 How to Play",
+                    si3lnDesc: "SI3LN is a modern take on the classic Space Invaders arcade game.",
+                    controlsTitle: "🎮 Controls",
+                    ctrlMove: "Arrow Keys or WASD — Move your ship left/right",
+                    ctrlShoot: "Space Bar — Shoot",
+                    ctrlPause: "P — Pause game",
+                    ctrlExit: "ESC — Exit to menu",
+                    gameplayTitle: "🎯 Gameplay",
+                    gameplay1: "Destroy all alien invaders before they reach the bottom",
+                    gameplay2: "Use barriers for cover, but they degrade over time",
+                    gameplay3: "Watch out for the UFO - it gives bonus points!",
+                    gameplay4: "Complete levels to unlock new worlds",
+                    scoringTitle: "🏆 Scoring",
+                    score1: "Small aliens: 10 points",
+                    score2: "Medium aliens: 20 points",
+                    score3: "Large aliens: 30 points",
+                    score4: "UFO: 50-300 points (random)",
+                    score5: "Level completion bonus: 1000 points",
+                    tipsTitle: "💡 Tips & Tricks",
+                    tip1: "Take your time - accuracy is more important than speed",
+                    tip2: "Use barriers strategically",
+                    tip3: "Watch the alien movement patterns",
+                    tip4: "Save power-ups for later levels",
+                    tip5: "Register an account to save your high scores!",
+                    reportTitle: "⚠️ Report Player",
+                    reportDesc: "Help us maintain a safe and respectful community. Fill in the form and download the report file to send it to our moderation team.",
+                    reportUsernameLbl: "Player Username *",
+                    reportUsernamePh: "Enter the username to report",
+                    reportReasonLbl: "Reason for Report *",
+                    reportReasonPh: "Select a reason",
+                    reportReasonOffUser: "Offensive Username",
+                    reportReasonOffDesc: "Offensive Profile Description",
+                    reportReasonHaras: "Harassment",
+                    reportReasonCheat: "Cheating/Hacking",
+                    reportReasonSpam: "Spam",
+                    reportReasonOther: "Other",
+                    reportDetailsLbl: "Details *",
+                    reportDetailsPh: "Please provide details about the incident...",
+                    reportEvidenceLbl: "Evidence (Optional)",
+                    reportEvidencePh: "Describe any evidence (screenshots taken, date/time, etc.)",
+                    reportSubmitBtn: "📥 Download Report File",
+                    reportNote: "Note: The report will be downloaded as a .txt file. You can email it to support@arcad3x.com or upload it via the admin panel. False reports may result in action against your account.",
+                    bugPageTitle: "🐛 Report a Bug",
+                    bugDesc: "Found a bug? Fill in the form and download the bug report file.",
+                    bugTitleLbl: "Bug Title *",
+                    bugTitlePh: "Brief description of the bug",
+                    bugCategoryLbl: "Category *",
+                    bugCategoryPh: "Select category",
+                    bugCatGameplay: "Gameplay",
+                    bugCatUI: "User Interface",
+                    bugCatLogin: "Login/Authentication",
+                    bugCatProfile: "Profile",
+                    bugCatGraphics: "Graphics/Visual",
+                    bugCatAudio: "Audio",
+                    bugCatPerf: "Performance",
+                    bugCatOther: "Other",
+                    bugDescLbl: "Description *",
+                    bugDescPh: "What happened? What did you expect to happen?",
+                    bugStepsLbl: "Steps to Reproduce",
+                    bugStepsPh: "1. Go to...\n2. Click on...\n3. See error",
+                    bugBrowserLbl: "Browser & OS",
+                    bugBrowserPh: "e.g., Chrome 120 on Windows 11",
+                    bugSubmitBtn: "📥 Download Bug Report",
+                    supportTitle: "💝 Support ARCAD3X",
+                    supportThankYou: "Thank You for Your Support!",
+                    supportDesc2: "ARCAD3X is a passion project brought to life by dedicated developers. Your support helps us continue improving the platform and creating more amazing games.",
+                    supportWaysTitle: "Ways to Support Us",
+                    supportWay1: "⭐ Play our games and share with friends",
+                    supportWay2: "💬 Provide feedback and report bugs",
+                    supportWay3: "📢 Follow us on social media",
+                    supportWay4: "💰 Financial support (Coming Soon)",
+                    supportPaymentTitle: "💳 Payment options (PayPal, Stripe) coming soon!",
+                    supportPaymentHint: "We're working on integrating secure payment methods to accept donations.",
+                    supportFooter: "Created with ❤️ by Hugex & Schps"
+                },
+                // Search
+                search: {
+                    noResults: "No results found"
                 },
                 // Settings page
                 settings: {
@@ -122,7 +213,10 @@ class I18nManager {
                 },
                 // About page
                 about: {
-                    title: "ℹ️ About us"
+                    title: "ℹ️ About us",
+                    description: "SI3LN project by Hugex & Schps",
+                    platform: "FullStack gaming platform",
+                    copyright: "© 2026 ARCAD3X - All rights reserved"
                 },
                 // Common
                 common: {
@@ -163,7 +257,11 @@ class I18nManager {
                     playNow: "Jouer maintenant →",
                     leaderboard: "Classement",
                     playerProfile: "Profil Joueur",
-                    loading: "Chargement..."
+                    loading: "Chargement...",
+                    noScores: "Aucun score pour l'instant. Soyez le premier à jouer !",
+                    leaderboardError: "Impossible de charger le classement.",
+                    welcomeUser: "Bienvenue,",
+                    pleaseLogin: "Veuillez vous connecter"
                 },
                 // Login page
                 login: {
@@ -196,7 +294,12 @@ class I18nManager {
                     termsOfService: "conditions d'utilisation",
                     createButton: "Créer mon compte",
                     alreadyHaveAccount: "Déjà un compte ?",
-                    loginLink: "Connectez-vous"
+                    loginLink: "Connectez-vous",
+                    pseudoAvailable: "✓ Pseudo disponible",
+                    pseudoProfanity: "❌ Ce pseudo contient des termes inappropriés",
+                    pseudoFormat: "❌ 3 caractères min., lettres, chiffres et _ uniquement",
+                    passwordsMatch: "✓ Les mots de passe correspondent",
+                    passwordsNoMatch: "❌ Les mots de passe ne correspondent pas"
                 },
                 // Profile page
                 profile: {
@@ -212,7 +315,9 @@ class I18nManager {
                     favoriteGames: "⭐ Jeux favoris",
                     multiSelectHint: "Maintenez Ctrl/Cmd pour sélectionner plusieurs",
                     saveChanges: "Enregistrer les modifications",
-                    cancel: "Annuler"
+                    cancel: "Annuler",
+                    noGamesPlayed: "Aucune partie jouée pour l'instant !",
+                    loginToSeeScores: "Connectez-vous pour voir vos scores"
                 },
                 // Games page
                 games: {
@@ -242,7 +347,87 @@ class I18nManager {
                     support: "Nous soutenir",
                     supportDesc: "Soutenez le développement d'ARCAD3X",
                     supportBtn: "Soutenir le projet",
-                    backToMenu: "← Retour au menu d'aide"
+                    backToMenu: "← Retour au menu d'aide",
+                    gamesPageTitle: "🎮 Tutoriels de jeux",
+                    si3lnTitle: "SI3LN - Space Invaders III Last Night",
+                    howToPlay: "📖 Comment jouer",
+                    si3lnDesc: "SI3LN est une version moderne du classique Space Invaders.",
+                    controlsTitle: "🎮 Contrôles",
+                    ctrlMove: "Flèches ou WASD — Déplacer le vaisseau",
+                    ctrlShoot: "Espace — Tirer",
+                    ctrlPause: "P — Mettre en pause",
+                    ctrlExit: "ESC — Retour au menu",
+                    gameplayTitle: "🎯 Gameplay",
+                    gameplay1: "Détruisez tous les envahisseurs avant qu'ils atteignent le bas",
+                    gameplay2: "Utilisez les barrières comme couverture, elles se dégradent",
+                    gameplay3: "Attention à l'OVNI - il donne des points bonus !",
+                    gameplay4: "Complétez les niveaux pour débloquer de nouveaux mondes",
+                    scoringTitle: "🏆 Score",
+                    score1: "Petits aliens : 10 points",
+                    score2: "Aliens moyens : 20 points",
+                    score3: "Grands aliens : 30 points",
+                    score4: "OVNI : 50-300 points (aléatoire)",
+                    score5: "Bonus de niveau : 1000 points",
+                    tipsTitle: "💡 Conseils",
+                    tip1: "Prenez votre temps — la précision prime sur la vitesse",
+                    tip2: "Utilisez les barrières stratégiquement",
+                    tip3: "Observez les patterns de déplacement des aliens",
+                    tip4: "Gardez les bonus pour les niveaux suivants",
+                    tip5: "Inscrivez-vous pour sauvegarder vos scores !",
+                    reportTitle: "⚠️ Signaler un joueur",
+                    reportDesc: "Aidez-nous à maintenir une communauté sûre. Remplissez le formulaire et téléchargez le rapport pour l'envoyer à notre équipe de modération.",
+                    reportUsernameLbl: "Nom d'utilisateur *",
+                    reportUsernamePh: "Entrez le nom d'utilisateur à signaler",
+                    reportReasonLbl: "Raison du signalement *",
+                    reportReasonPh: "Sélectionnez une raison",
+                    reportReasonOffUser: "Pseudo offensant",
+                    reportReasonOffDesc: "Description de profil offensante",
+                    reportReasonHaras: "Harcèlement",
+                    reportReasonCheat: "Triche/Hack",
+                    reportReasonSpam: "Spam",
+                    reportReasonOther: "Autre",
+                    reportDetailsLbl: "Détails *",
+                    reportDetailsPh: "Décrivez l'incident en détail...",
+                    reportEvidenceLbl: "Preuves (optionnel)",
+                    reportEvidencePh: "Décrivez les preuves disponibles (captures d'écran, date/heure, etc.)",
+                    reportSubmitBtn: "📥 Télécharger le rapport",
+                    reportNote: "Note : Le rapport sera téléchargé en .txt. Vous pouvez l'envoyer à support@arcad3x.com ou l'uploader via le panel admin. Les faux signalements peuvent entraîner des mesures contre votre compte.",
+                    bugPageTitle: "🐛 Signaler un bug",
+                    bugDesc: "Vous avez trouvé un bug ? Remplissez le formulaire et téléchargez le rapport.",
+                    bugTitleLbl: "Titre du bug *",
+                    bugTitlePh: "Description courte du bug",
+                    bugCategoryLbl: "Catégorie *",
+                    bugCategoryPh: "Sélectionnez une catégorie",
+                    bugCatGameplay: "Gameplay",
+                    bugCatUI: "Interface utilisateur",
+                    bugCatLogin: "Connexion/Authentification",
+                    bugCatProfile: "Profil",
+                    bugCatGraphics: "Graphismes/Visuel",
+                    bugCatAudio: "Audio",
+                    bugCatPerf: "Performance",
+                    bugCatOther: "Autre",
+                    bugDescLbl: "Description *",
+                    bugDescPh: "Que s'est-il passé ? Que vous attendiez-vous ?",
+                    bugStepsLbl: "Étapes pour reproduire",
+                    bugStepsPh: "1. Aller à...\n2. Cliquer sur...\n3. Voir l'erreur",
+                    bugBrowserLbl: "Navigateur & OS",
+                    bugBrowserPh: "ex : Chrome 120 sur Windows 11",
+                    bugSubmitBtn: "📥 Télécharger le rapport de bug",
+                    supportTitle: "💝 Soutenir ARCAD3X",
+                    supportThankYou: "Merci pour votre soutien !",
+                    supportDesc2: "ARCAD3X est un projet passionné créé par des développeurs dévoués. Votre soutien nous aide à continuer d'améliorer la plateforme et à créer de nouveaux jeux.",
+                    supportWaysTitle: "Comment nous soutenir",
+                    supportWay1: "⭐ Jouez à nos jeux et partagez avec vos amis",
+                    supportWay2: "💬 Donnez votre avis et signalez des bugs",
+                    supportWay3: "📢 Suivez-nous sur les réseaux sociaux",
+                    supportWay4: "💰 Soutien financier (Bientôt disponible)",
+                    supportPaymentTitle: "💳 Options de paiement (PayPal, Stripe) bientôt disponibles !",
+                    supportPaymentHint: "Nous travaillons à l'intégration de méthodes de paiement sécurisées pour accepter les dons.",
+                    supportFooter: "Créé avec ❤️ par Hugex & Schps"
+                },
+                // Search
+                search: {
+                    noResults: "Aucun résultat trouvé"
                 },
                 // Settings page
                 settings: {
@@ -252,7 +437,10 @@ class I18nManager {
                 },
                 // About page
                 about: {
-                    title: "ℹ️ À propos de nous"
+                    title: "ℹ️ À propos de nous",
+                    description: "Projet SI3LN par Hugex & Schps",
+                    platform: "Plateforme de jeu FullStack",
+                    copyright: "© 2026 ARCAD3X - Tous droits réservés"
                 },
                 // Common
                 common: {
