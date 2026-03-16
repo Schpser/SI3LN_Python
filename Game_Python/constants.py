@@ -16,6 +16,12 @@ DEFAULT_SCREEN_WIDTH = 1280
 DEFAULT_SCREEN_HEIGHT = 720
 FPS = 60
 
+# Reference resolution used by ResolutionManager for responsive scaling.
+# All UI coordinates and game logic are expressed in this space.
+# S = min(W_actual / REF_WIDTH,  H_actual / REF_HEIGHT)
+REF_WIDTH = 1280
+REF_HEIGHT = 720
+
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)

@@ -23,9 +23,21 @@ router = Router()
 
 # Player endpoints (protected)
 @router.get("/players", response=List[PlayerSchema], tags=["Players"], auth=jwt_auth)
-def list_players(request):
-    """Get all players (requires authentication)"""
-    return Player.objects.all()
+def list_players(request, limit: int = 50, offset: int = 0):
+    """Get players with optional pagination (requires authentication).
+
+    * `limit` – maximum number of players to return (default 50).
+    * `offset` – number of players to skip (default 0).
+    """
+    qs = Player.objects.all().order_by("id")
+    # enforce sensible bounds to avoid overloading the database
+    if limit < 1:
+        limit = 1
+    if limit > 200:
+        limit = 200
+    if offset < 0:
+        offset = 0
+    return qs[offset : offset + limit]
 
 
 @router.post("/players", response=PlayerSchema, tags=["Players"])
@@ -67,14 +79,31 @@ def delete_player(request, player_id: int):
 
 # Game Session endpoints (protected)
 @router.get("/sessions", response=List[GameSessionSchema], tags=["Game Sessions"], auth=jwt_auth)
-def list_sessions(request, player_id: int = None, world_id: int = None):
-    """Get all game sessions (requires authentication)"""
+def list_sessions(
+    request,
+    player_id: int = None,
+    world_id: int = None,
+    limit: int = 50,
+    offset: int = 0,
+):
+    """Get game sessions with optional pagination (requires authentication).
+
+    Filtering by `player_id` or `world_id` is still supported.
+    ``limit`` and ``offset`` work just like on ``/players``.
+    """
     sessions = GameSession.objects.all()
     if player_id:
         sessions = sessions.filter(player_id=player_id)
     if world_id:
         sessions = sessions.filter(world_id=world_id)
-    return sessions.order_by("-started_at")
+    sessions = sessions.order_by("-started_at")
+    if limit < 1:
+        limit = 1
+    if limit > 200:
+        limit = 200
+    if offset < 0:
+        offset = 0
+    return sessions[offset : offset + limit]
 
 
 @router.post("/sessions", response=GameSessionSchema, tags=["Game Sessions"], auth=jwt_auth)
